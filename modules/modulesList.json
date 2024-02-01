@@ -1,0 +1,15 @@
+[
+    {
+        "name": "MemoryModule",
+        "path": "./modules/memory/index.js",
+        "autoStart": false,
+        "autoRestart": false
+        
+    },
+    {
+        "name": "ProcessorModule",
+        "path": "./modules/processor/index.js",
+        "autoStart": false,
+        "autoRestart": false
+    }
+]
