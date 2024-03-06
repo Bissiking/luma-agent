@@ -1,35 +1,60 @@
 const path = require('path');
 const writeToLogFile = require(path.resolve(__dirname, '../../functions/sys')).writeToLogFile;
-const os = require('os');
-const diskspace = require('diskspace');
 const logsDirectory = 'data/logs';
 const logFileName = 'disk-log.json';
+const uuid = require(path.resolve(__dirname, '../../config.json'));
+const axios = require('axios');
+// CONST
+const fs = require("fs");
+const si = require('systeminformation');
 
-process.on('message', (msg) => {
-    if (msg === 'check') {
-        setInterval(() => {
-            const currentDate = new Date();
-            const formattedDate = currentDate.toISOString().split('T')[0];
-            const logFilePath = path.join(logsDirectory, `${formattedDate}-${logFileName}`);
+function disk() {
+    const currentDate = new Date();
+    const formattedDate = currentDate.toISOString().split('T')[0];
+    const logFilePath = path.join(logsDirectory, `${formattedDate}-${logFileName}`);
 
-            diskspace.check('/', (err, result) => {
-                if (err) {
-                    console.error('Erreur lors de la récupération de l\'espace disque :', err);
-                    return;
-                }
+    si.fsSize()
+        .then(data => {
+            const systemInfo = {
+                date: currentDate.toISOString(),
+                disk: data,
+            };
+            SendData(systemInfo);
+            writeToLogFile(logFilePath, systemInfo);
+        })
+        .catch(error => {
+            console.error('critical', 'DISK', 'La sonde MEM n\'a pas réussi à récupérer les informations. ERR: ' + error)
+        })
+}
 
-                const systemInfo = {
-                    date: currentDate.toISOString(),
-                    disk: {
-                        total: result.total,
-                        free: result.free,
-                        used: result.used,
-                        capacity: result.capacity,
-                    },
-                };
+// First Start
+disk();
+setInterval(() => {
+    disk();
+}, 60000);
 
-                writeToLogFile(logFilePath, systemInfo);
-            });
-        }, 5000);
+function SendData(Statut) {
+    // Envoie des informations à l'API
+    const currentDate = new Date();
+    const DateFull = currentDate.toISOString();
+    const result = {
+        uuid: uuid.uuid,
+        date: DateFull,
+        processName: 'disk',
+        status: Statut
+    };
+
+    if (fs.existsSync('./dev.lock')) {
+        var dom = "dev.mhemery.fr"
+    } else {
+        var dom = "mhemery.fr"
     }
-});
+    // Envoi des données à l'API
+    axios.post(`https://${dom}/api/agent/statut`, { result }, { timeout: 2000 })
+        .then((response) => {
+            console.log(response.data);
+        })
+        .catch((error) => {
+            console.error('Erreur lors de la requête :', error.code);
+        });
+}

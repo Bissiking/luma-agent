@@ -2,19 +2,26 @@
     {
         "name": "MemoryModule",
         "path": "./modules/memory/index.js",
-        "autoStart": true,
+        "autoStart": false,
         "autoRestart": false
     },
     {
         "name": "ProcessorModule",
         "path": "./modules/processor/index.js",
-        "autoStart": true,
+        "autoStart": false,
         "autoRestart": false
     },
     {
         "name": "DiskModule",
         "path": "./modules/disk/index.js",
         "autoStart": true,
+        "autoRestart": false
+    }
+    ,
+    {
+        "name": "PlexProcessCheck",
+        "path": "./modules/plex/index.js",
+        "autoStart": false,
         "autoRestart": false
     }
 ]

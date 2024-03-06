@@ -4,6 +4,17 @@ const sys = require('./functions/sys');
 const forkModule = require('./functions/forkModule');
 const cleanUpExistingPids = require('./functions/pidCleanup');
 
+const uuid = require('./config.json');
+
+if (uuid.uuid == "") {
+    console.log("uuid non valide.");
+    process.exit(1);    
+}
+
+if (fs.existsSync('./dev.lock')) {
+    console.log("Utilisation des fonctions de DEV"); 
+}
+
 // Création des dossier essencielles
 sys.createDirectory("data");
 sys.createDirectory("data/logs");
