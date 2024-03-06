@@ -28,7 +28,7 @@ function memory() {
 memory();
 setInterval(() => {
     memory();
-}, 15000);
+}, 20000);
 
 function SendData(Statut) {
     // Envoie des informations à l'API
