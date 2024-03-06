@@ -54,4 +54,4 @@ Check(); // Fisrt start
 
 setInterval(() => {
     Check()
-}, 60000); // Check toutes les minutes
+}, 30000); // Check toutes les minutes
