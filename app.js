@@ -7,12 +7,12 @@ const axios = require('axios');
 
 var uuid = "";
 
-// if (process.env.uuid !== "" || process.env.uuid !== undefined || process.env.uuid !== null) {
-//     uuid = process.env.uuid;
-//     console.log("UUID: "+uuid);
-//     console.log("uuid non valide. Arrêt de l'agent");
-//     process.exit(1);
-// }
+if (process.env.uuid !== "" || process.env.uuid !== undefined || process.env.uuid !== null) {
+    uuid = process.env.uuid;
+    console.log("UUID: "+uuid);
+    console.log("uuid non valide. Arrêt de l'agent");
+    process.exit(1);
+}
 
 if (fs.existsSync('./dev.lock')) {
     console.log("Utilisation des fonctions de DEV");
