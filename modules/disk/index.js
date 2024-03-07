@@ -31,7 +31,7 @@ function disk() {
 disk();
 setInterval(() => {
     disk();
-}, 60000);
+}, 3600000);
 
 function SendData(Statut) {
     // Envoie des informations à l'API

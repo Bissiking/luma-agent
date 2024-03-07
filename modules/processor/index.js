@@ -36,7 +36,7 @@ function processor() {
 processor();
 setInterval(() => {
     processor();
-}, 10000);
+}, 25000);
 
 function SendData(Statut) {
     // Envoie des informations à l'API
