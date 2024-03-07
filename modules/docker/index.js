@@ -66,6 +66,7 @@ function SendData(Statut) {
 }
 
 // Appel de la fonction pour lister tous les containers et les stocker dans un fichier JSON
+listAllContainersAndStoreJSON();
 setInterval(() => {
     listAllContainersAndStoreJSON();
 }, 120000); // Vérification toutes les 2 minutes
