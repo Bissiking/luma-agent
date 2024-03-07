@@ -38,7 +38,7 @@ function SendData(Statut) {
     const currentDate = new Date();
     const DateFull = currentDate.toISOString();
     const result = {
-        uuid: uuid.uuid,
+        uuid: uuid,
         date: DateFull,
         processName: 'disk',
         status: Statut

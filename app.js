@@ -5,13 +5,14 @@ const forkModule = require('./functions/forkModule');
 const cleanUpExistingPids = require('./functions/pidCleanup');
 const axios = require('axios');
 
-var uuid = "";
-
 if (process.env.uuid == "" || process.env.uuid == undefined || process.env.uuid == null) {
     uuid = process.env.uuid;
     console.log("UUID: "+uuid);
     console.log("uuid non valide. Arrêt de l'agent");
     process.exit(1);
+}else{
+    uuid = process.env.uuid;
+    console.log("UUID: "+uuid);
 }
 
 if (fs.existsSync('./dev.lock')) {
@@ -32,13 +33,18 @@ cleanUpExistingPids();
 
 if (!fs.existsSync('data/config/config.json')) {
     console.log("Récupération de la configuration");
-
     // CALL API
     axios.post(`https://${dom}/api/agent/statut`, {
         uuid: uuid,
         config: true
-    }, { timeout: 2000 })
+    })
         .then((response) => {
+            console.log(response.data);
+
+            if (response.data.success != true) {
+                console.log('Echec de la récupération de la config. #0001');
+                process.exit(1);
+            }
             let jsonData = response.data.data;
             const jsonString = JSON.stringify(jsonData, null, 2); // Le paramètre null et 2 ajoutent de l'espacement pour une meilleure lisibilité
 
@@ -56,8 +62,8 @@ if (!fs.existsSync('data/config/config.json')) {
             });
         })
         .catch((error) => {
-            console.error('Erreur lors de la requête :', error.code);
-            console.log("Echec de la récupération de la configuration");
+            console.error('Erreur lors de la requête :', error);
+            console.log("Echec de la récupération de la configuration #0002");
             process.exit(1);
 
         });

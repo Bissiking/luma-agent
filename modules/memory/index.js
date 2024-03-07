@@ -7,6 +7,7 @@ const logsDirectory = 'data/logs';
 const logFileName = 'memory-log.json';
 const fs = require('fs');
 const uuid = process.env.uuid;
+console.log(uuid);
 const axios = require('axios');
 
 function memory() {
@@ -35,7 +36,7 @@ function SendData(Statut) {
     const currentDate = new Date();
     const DateFull = currentDate.toISOString();
     const result = {
-        uuid: uuid.uuid,
+        uuid: uuid,
         date: DateFull,
         processName: 'memory',
         status: Statut
