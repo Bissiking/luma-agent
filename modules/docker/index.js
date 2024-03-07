@@ -32,18 +32,40 @@ function listAllContainersAndStoreJSON() {
         const jsonData = JSON.stringify(containersData, null, 2);
 
         // Chemin du fichier JSON à créer
-        const filePath = './containers.json';
+        // const filePath = './data/containers.json';
 
         // Écrire les données JSON dans le fichier
-        fs.writeFile(filePath, jsonData, (err) => {
-            if (err) {
-                console.error('Erreur lors de l\'écriture dans le fichier JSON :', err);
-                return;
-            }
-            console.log('Fichier JSON créé avec succès :', filePath);
-        });
+        SendData(jsonData);
     });
 }
 
+function SendData(Statut) {
+    // Envoie des informations à l'API
+    const currentDate = new Date();
+    const DateFull = currentDate.toISOString();
+    const result = {
+        uuid: uuid,
+        date: DateFull,
+        processName: 'docker',
+        containers: Statut
+    };
+
+    if (fs.existsSync('./dev.lock')) {
+        var dom = "dev.mhemery.fr"
+    } else {
+        var dom = "mhemery.fr"
+    }
+    // Envoi des données à l'API
+    axios.post(`https://${dom}/api/agent/statut`, { result }, { timeout: 2000 })
+        .then((response) => {
+            console.log(response.data);
+        })
+        .catch((error) => {
+            console.error('Erreur lors de la requête :', error.code);
+        });
+}
+
 // Appel de la fonction pour lister tous les containers et les stocker dans un fichier JSON
-listAllContainersAndStoreJSON();
+setInterval(() => {
+    listAllContainersAndStoreJSON();
+}, 120000); // Vérification toutes les 2 minutes
