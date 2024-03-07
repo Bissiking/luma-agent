@@ -14,7 +14,7 @@ function forkModule(moduleName, modulePath, autostart, autoRestart) {
     function startModule() {
         const childProcess = fork(modulePath, [autostart.toString()], { stdio: 'inherit' });
 
-        childProcess.on('spawn', function() {
+        childProcess.on('spawn', function () {
             // Au démarrage du module
             fs.writeFile(pidModule, process.pid.toString(), (err) => {
                 if (err) {
@@ -36,6 +36,10 @@ function forkModule(moduleName, modulePath, autostart, autoRestart) {
 
             console.log(`Le module ${modulePath} s'est arrêté avec le code ${code} et le signal ${signal}.`);
             // Ajoutez ici du code pour gérer le redémarrage du module si nécessaire
+            if (autorestart) {
+                console.log(`Module ${moduleName} va redémarrer.`);
+                startModule();
+            }
         });
     }
 }

@@ -74,10 +74,19 @@ if (!fs.existsSync('data/config/config.json')) {
         const modulesListPath = './modules/modulesList.json';
         const moduleListRaw = fs.readFileSync(modulesListPath);
         const moduleList = JSON.parse(moduleListRaw);
-
+        // CONFIG
+        const configListPath = 'data/config/config.json';
+        const configListRaw = fs.readFileSync(configListPath);
+        const configList = JSON.parse(configListRaw);
         // Exécutez chaque module de la liste
         moduleList.forEach((module) => {
-            forkModule(module.name, module.path, module.autoStart, module.autoRestart);
+            let mod_autostart = module.name + '_autostart';
+            let mod_autorestart = module.name + '_autorestart';
+
+            let config_mod_autostart = configList[mod_autostart];
+            let config_mod_autorestart = configList[mod_autorestart];
+
+            forkModule(module.name, module.path, config_mod_autostart,config_mod_autorestart);
         });
     }, 5000);
 }
@@ -93,7 +102,7 @@ function Récupdata() {
             console.log(response.data);
 
             if (response.data.success != true) {
-                console.log('Echec de la récupération de la config. #0001');
+                console.log('Echec de la récupération de la config. #0003');
                 process.exit(1);
             }
             let jsonData = response.data.data;
@@ -109,12 +118,11 @@ function Récupdata() {
                     return;
                 }
                 console.log('Fichier JSON créé avec succès :', filePath);
-                console.log('Vous pouvez redémarrer l\'agent');
             });
         })
         .catch((error) => {
             console.error('Erreur lors de la requête :', error);
-            console.log("Echec de la récupération de la configuration #0003");
+            console.log("Echec de la récupération de la configuration #0004");
         });
 }
 
