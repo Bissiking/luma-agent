@@ -6,7 +6,7 @@ const os = require('os');
 const logsDirectory = 'data/logs';
 const logFileName = 'memory-log.json';
 const fs = require('fs');
-const uuid = require(path.resolve(__dirname, '../../config.json'));
+const uuid = process.env.uuid;
 const axios = require('axios');
 
 function memory() {

@@ -6,7 +6,7 @@ const pidusage = require('pidusage');
 const logsDirectory = 'data/logs';
 const logFileName = 'processor-log.json';
 const fs = require('fs');
-const uuid = require(path.resolve(__dirname, '../../config.json'));
+const uuid = process.env.uuid;
 const axios = require('axios');
 
 function processor() {

@@ -2,7 +2,7 @@ const path = require('path');
 const writeToLogFile = require(path.resolve(__dirname, '../../functions/sys')).writeToLogFile;
 const logsDirectory = 'data/logs';
 const logFileName = 'disk-log.json';
-const uuid = require(path.resolve(__dirname, '../../config.json'));
+const uuid = process.env.uuid;
 const axios = require('axios');
 // CONST
 const fs = require("fs");

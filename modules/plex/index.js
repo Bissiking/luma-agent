@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const checkProcessStatus = require(path.resolve(__dirname, '../../functions/processCheck')).checkProcessStatus;
-const uuid = require(path.resolve(__dirname, '../../config.json'));
+const uuid = process.env.uuid;
 const axios = require('axios');
 // Utilisation :
 
