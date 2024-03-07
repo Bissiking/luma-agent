@@ -2,7 +2,7 @@ const { fork } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-function forkModule(moduleName, modulePath, autostart) {
+function forkModule(moduleName, modulePath, autostart, autoRestart) {
     const pidModule = path.join(__dirname, '../data/pid', `${moduleName}.pid`);
     if (autostart) {
         console.log(`Module ${moduleName} va démarrer en mode autostart.`);

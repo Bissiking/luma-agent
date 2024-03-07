@@ -70,4 +70,4 @@ function SendData(Statut) {
 listAllContainersAndStoreJSON();
 setInterval(() => {
     listAllContainersAndStoreJSON();
-}, 120000); // Vérification toutes les 2 minutes
+}, 300000); // Vérification toutes les 5 minutes

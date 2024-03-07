@@ -31,7 +31,7 @@ function disk() {
 disk();
 setInterval(() => {
     disk();
-}, 3600000);
+}, 3600000); //Check toutes les heures 
 
 function SendData(Statut) {
     // Envoie des informations à l'API

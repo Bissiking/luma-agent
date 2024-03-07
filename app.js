@@ -7,12 +7,12 @@ const axios = require('axios');
 
 if (process.env.uuid == "" || process.env.uuid == undefined || process.env.uuid == null) {
     uuid = process.env.uuid;
-    console.log("UUID: "+uuid);
+    console.log("UUID: " + uuid);
     console.log("uuid non valide. Arrêt de l'agent");
     process.exit(1);
-}else{
+} else {
     uuid = process.env.uuid;
-    console.log("UUID: "+uuid);
+    console.log("UUID: " + uuid);
 }
 
 if (fs.existsSync('./dev.lock')) {
@@ -68,6 +68,7 @@ if (!fs.existsSync('data/config/config.json')) {
 
         });
 } else {
+    Récupdata();
     setTimeout(() => {
         // Lisez le fichier JSON pour obtenir la liste des modules
         const modulesListPath = './modules/modulesList.json';
@@ -76,10 +77,51 @@ if (!fs.existsSync('data/config/config.json')) {
 
         // Exécutez chaque module de la liste
         moduleList.forEach((module) => {
-            forkModule(module.name, module.path, module.autoStart);
+            forkModule(module.name, module.path, module.autoStart, module.autoRestart);
         });
     }, 5000);
 }
+
+// Récupération de la configuration tout les x Temps
+
+function Récupdata() {
+    axios.post(`https://${dom}/api/agent/statut`, {
+        uuid: uuid,
+        config: true
+    })
+        .then((response) => {
+            console.log(response.data);
+
+            if (response.data.success != true) {
+                console.log('Echec de la récupération de la config. #0001');
+                process.exit(1);
+            }
+            let jsonData = response.data.data;
+            const jsonString = JSON.stringify(jsonData, null, 2); // Le paramètre null et 2 ajoutent de l'espacement pour une meilleure lisibilité
+
+            // Chemin du fichier JSON à créer
+            const filePath = 'data/config/config.json';
+
+            // Écrire les données JSON dans le fichier
+            fs.writeFile(filePath, jsonString, (err) => {
+                if (err) {
+                    console.error('Erreur lors de l\'écriture dans le fichier JSON :', err);
+                    return;
+                }
+                console.log('Fichier JSON créé avec succès :', filePath);
+                console.log('Vous pouvez redémarrer l\'agent');
+            });
+        })
+        .catch((error) => {
+            console.error('Erreur lors de la requête :', error);
+            console.log("Echec de la récupération de la configuration #0003");
+        });
+}
+
+setInterval(() => {
+    Récupdata();
+}, 3600000);
+
 
 // ---------------------------------
 
