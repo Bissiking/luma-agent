@@ -1,11 +1,12 @@
-const path = require('path');
-const writeToLogFile = require(path.resolve(__dirname, '../../functions/sys')).writeToLogFile;
-const logsDirectory = 'data/logs';
-const logFileName = 'disk-log.json';
 const uuid = process.env.uuid;
 const axios = require('axios');
 const Docker = require('dockerode');
 const fs = require('fs');
+
+if (!fs.existsSync('/var/run/docker.sock')) {
+    console.error('Socket docker non trouvé');
+    process.exit(1);
+}
 
 // Créer une instance de Dockerode
 const docker = new Docker();
@@ -61,7 +62,7 @@ function SendData(Statut) {
             console.log(response.data);
         })
         .catch((error) => {
-            console.error('Erreur lors de la requête :', error);
+            console.error('Erreur lors de la requête :', error.code);
         });
 }
 
