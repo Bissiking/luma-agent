@@ -61,7 +61,7 @@ function SendData(Statut) {
             console.log(response.data);
         })
         .catch((error) => {
-            console.error('Erreur lors de la requête :', error.code);
+            console.error('Erreur lors de la requête :', error);
         });
 }
 
