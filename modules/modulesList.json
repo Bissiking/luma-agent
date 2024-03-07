@@ -8,20 +8,20 @@
     {
         "name": "ProcessorModule",
         "path": "./modules/processor/index.js",
-        "autoStart": false,
+        "autoStart": true,
         "autoRestart": false
     },
     {
         "name": "DiskModule",
         "path": "./modules/disk/index.js",
-        "autoStart": false,
+        "autoStart": true,
         "autoRestart": false
     }
     ,
     {
         "name": "PlexProcessCheck",
         "path": "./modules/plex/index.js",
-        "autoStart": false,
+        "autoStart": true,
         "autoRestart": false
     }
 ]
