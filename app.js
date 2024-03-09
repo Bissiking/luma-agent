@@ -62,7 +62,7 @@ if (!fs.existsSync('data/config/config.json')) {
             });
 
             // First Start
-            SendDataAgentUP-t();
+            SendDataAgentUP();
         })
         .catch((error) => {
             console.error('Erreur lors de la requête :', error);
@@ -153,8 +153,6 @@ function SendDataAgentUP() {
             console.error('Erreur lors de la requête :', error.code);
         });
 }
-
-SendDataAgentUP();
 
 setInterval(() => {
     SendDataAgentUP(); 
