@@ -147,11 +147,12 @@ function SendDataAgentUP() {
     // Envoi des données à l'API
     axios.post(`https://${dom}/api/agent/statut`, { result })
         .then((response) => {
+            console.log('UP DATA');
             console.log(response.data);
         })
         .catch((error) => {
             console.log('ECHEC');
-            console.error('Erreur lors de la requête :', error.code);
+            console.error('Erreur lors de la requête :', error);
         });
 }
 
