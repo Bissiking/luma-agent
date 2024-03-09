@@ -150,6 +150,7 @@ function SendDataAgentUP() {
             console.log(response.data);
         })
         .catch((error) => {
+            console.log('ECHEC');
             console.error('Erreur lors de la requête :', error.code);
         });
 }
