@@ -60,6 +60,9 @@ if (!fs.existsSync('data/config/config.json')) {
                 console.log('Fichier JSON créé avec succès :', filePath);
                 console.log('Vous pouvez redémarrer l\'agent');
             });
+
+            // First Start
+            SendDataAgentUP-t();
         })
         .catch((error) => {
             console.error('Erreur lors de la requête :', error);
@@ -86,7 +89,7 @@ if (!fs.existsSync('data/config/config.json')) {
             let config_mod_autostart = configList[mod_autostart];
             let config_mod_autorestart = configList[mod_autorestart];
 
-            forkModule(module.name, module.path, config_mod_autostart,config_mod_autorestart);
+            forkModule(module.name, module.path, config_mod_autostart, config_mod_autorestart);
         });
     }, 5000);
 }
@@ -96,14 +99,13 @@ if (!fs.existsSync('data/config/config.json')) {
 function Récupdata() {
     axios.post(`https://${dom}/api/agent/statut`, {
         uuid: uuid,
-        config: true
+        config: true,
     })
         .then((response) => {
             console.log(response.data);
 
             if (response.data.success != true) {
                 console.log('Echec de la récupération de la config. #0003');
-                process.exit(1);
             }
             let jsonData = response.data.data;
             const jsonString = JSON.stringify(jsonData, null, 2); // Le paramètre null et 2 ajoutent de l'espacement pour une meilleure lisibilité
@@ -126,9 +128,42 @@ function Récupdata() {
         });
 }
 
+function SendDataAgentUP() {
+    // Envoie des informations à l'API
+    const currentDate = new Date();
+    const DateFull = currentDate.toISOString();
+    const result = {
+        uuid: uuid,
+        date: DateFull,
+        processName: 'agent-online',
+        statut: "Online"
+    };
+
+    if (fs.existsSync('./dev.lock')) {
+        var dom = "dev.mhemery.fr"
+    } else {
+        var dom = "mhemery.fr"
+    }
+    // Envoi des données à l'API
+    axios.post(`https://${dom}/api/agent/statut`, { result }, { timeout: 2000 })
+        .then((response) => {
+            console.log(response.data);
+        })
+        .catch((error) => {
+            console.error('Erreur lors de la requête :', error.code);
+        });
+}
+
+SendDataAgentUP();
+
+setInterval(() => {
+    SendDataAgentUP(); 
+}, 900000);
+
 setInterval(() => {
     Récupdata();
 }, 3600000);
+
 
 
 // ---------------------------------
