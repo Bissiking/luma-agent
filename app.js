@@ -60,9 +60,6 @@ if (!fs.existsSync('data/config/config.json')) {
                 console.log('Fichier JSON créé avec succès :', filePath);
                 console.log('Vous pouvez redémarrer l\'agent');
             });
-
-            // First Start
-            SendDataAgentUP();
         })
         .catch((error) => {
             console.error('Erreur lors de la requête :', error);
@@ -72,6 +69,7 @@ if (!fs.existsSync('data/config/config.json')) {
         });
 } else {
     Récupdata();
+    SendDataAgentUP();
     setTimeout(() => {
         // Lisez le fichier JSON pour obtenir la liste des modules
         const modulesListPath = './modules/modulesList.json';
