@@ -158,11 +158,11 @@ SendDataAgentUP();
 
 setInterval(() => {
     SendDataAgentUP(); 
-}, 900000);
+}, 900000); // UP toutes les 15 minutes
 
 setInterval(() => {
     Récupdata();
-}, 3600000);
+}, 3600000); // UP toutes les 15 minutes
 
 
 
