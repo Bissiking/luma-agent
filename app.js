@@ -145,7 +145,7 @@ function SendDataAgentUP() {
         var dom = "mhemery.fr"
     }
     // Envoi des données à l'API
-    axios.post(`https://${dom}/api/agent/statut`, { result }, { timeout: 2000 })
+    axios.post(`https://${dom}/api/agent/statut`, { result })
         .then((response) => {
             console.log(response.data);
         })
