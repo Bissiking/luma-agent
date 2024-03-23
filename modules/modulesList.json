@@ -28,5 +28,11 @@
         "path": "./modules/docker/index.js",
         "autoStart": true,
         "autoRestart": false
+    },
+    {
+        "name": "JellyFinProcessCheck",
+        "path": "./modules/jellyfin/index.js",
+        "autoStart": false,
+        "autoRestart": false
     }
 ]
