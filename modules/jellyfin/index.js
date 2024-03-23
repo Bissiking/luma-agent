@@ -41,7 +41,7 @@ function SendData(Statut) {
     const systemInfo = {
         date: DateFull,
         plex: {
-            processName: 'jellyfin',
+            processName: 'JellyFin',
             status: Statut
         }
     };
@@ -53,7 +53,7 @@ function SendData(Statut) {
     const result = {
         uuid: uuid,
         date: DateFull,
-        processName: 'jellyfin',
+        processName: 'JellyFin',
         status: Statut
     };
 
