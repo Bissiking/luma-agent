@@ -33,6 +33,13 @@ function Check() {
 function SendData(Statut) {
 
     // Création des logs (Variables)
+
+    const nDate = new Date().toLocaleString('fr-FR', {
+        timeZone: 'Europe/Paris'
+    });
+    
+    const timestamp = Date.now(nDate);
+
     const currentDate = new Date();
     const DateFull = currentDate.toISOString();
     const formattedDate = currentDate.toISOString().split('T')[0];
@@ -52,7 +59,7 @@ function SendData(Statut) {
     // Envoie des informations à l'API
     const result = {
         uuid: uuid,
-        date: DateFull,
+        date: timestamp,
         processName: 'BeamMP',
         status: Statut
     };

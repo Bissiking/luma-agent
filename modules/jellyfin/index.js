@@ -33,6 +33,7 @@ function Check() {
 function SendData(Statut) {
 
     // Création des logs (Variables)
+    
     const currentDate = new Date();
     const DateFull = currentDate.toISOString();
     const formattedDate = currentDate.toISOString().split('T')[0];
@@ -50,9 +51,17 @@ function SendData(Statut) {
     writeToLogFile(logFilePath, systemInfo);
 
     // Envoie des informations à l'API
+
+    const nDate = new Date().toLocaleString('fr-FR', {
+        timeZone: 'Europe/Paris'
+    });
+    
+    const timestamp = Date.now(nDate);
+
+    
     const result = {
         uuid: uuid,
-        date: DateFull,
+        date: timestamp,
         processName: 'JellyFin',
         status: Statut
     };

@@ -160,7 +160,7 @@ setInterval(() => {
 
 setInterval(() => {
     Récupdata();
-}, 3600000); // UP toutes les 15 minutes
+}, 3600000); // UP toutes les 1 heures
 
 
 

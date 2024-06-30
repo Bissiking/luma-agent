@@ -50,9 +50,16 @@ function SendData(Statut) {
     writeToLogFile(logFilePath, systemInfo);
 
     // Envoie des informations à l'API
+    const nDate = new Date().toLocaleString('fr-FR', {
+        timeZone: 'Europe/Paris'
+    });
+    
+    const timestamp = Date.now(nDate);
+
+
     const result = {
         uuid: uuid,
-        date: DateFull,
+        date: timestamp,
         processName: 'plex',
         status: Statut
     };

@@ -35,13 +35,17 @@ setInterval(() => {
 
 function SendData(Statut) {
     // Envoie des informations à l'API
-    const currentDate = new Date();
-    const DateFull = currentDate.toISOString();
+    const nDate = new Date().toLocaleString('fr-FR', {
+        timeZone: 'Europe/Paris'
+    });
+    
+    const timestamp = Date.now(nDate);
+
     const result = {
         uuid: uuid,
-        date: DateFull,
-        processName: 'disk',
-        status: Statut
+        date: timestamp,
+        processName: 'docker',
+        containers: Statut
     };
 
     if (fs.existsSync('./dev.lock')) {
