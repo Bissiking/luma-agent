@@ -38,7 +38,10 @@ function forkModule(moduleName, modulePath, autostart, autoRestart) {
             // Ajoutez ici du code pour gérer le redémarrage du module si nécessaire
             if (autoRestart) {
                 console.log(`Module ${moduleName} va redémarrer.`);
-                startModule();
+                setTimeout(() => {
+                    startModule();
+                }, 5000);
+                
             }
         });
     }

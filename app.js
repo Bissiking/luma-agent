@@ -127,31 +127,9 @@ function Récupdata() {
 }
 
 function SendDataAgentUP() {
-    // Envoie des informations à l'API
-    const currentDate = new Date();
-    const DateFull = currentDate.toISOString();
-    const result = {
-        uuid: uuid,
-        date: DateFull,
-        processName: 'agent-online',
-        statut: "Online"
-    };
-
-    if (fs.existsSync('./dev.lock')) {
-        var dom = "dev.mhemery.fr"
-    } else {
-        var dom = "mhemery.fr"
-    }
-    // Envoi des données à l'API
-    axios.post(`https://${dom}/api/agent/statut`, { result })
-        .then((response) => {
-            console.log('UP DATA');
-            console.log(response.data);
-        })
-        .catch((error) => {
-            console.log('ECHEC');
-            console.error('Erreur lors de la requête :', error);
-        });
+    const { LogsInternal } = require('./functions/logsModule');
+    const ModuleName = "agent-online";
+    LogsInternal(ModuleName, {status: "Online"});
 }
 
 setInterval(() => {

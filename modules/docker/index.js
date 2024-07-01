@@ -1,11 +1,16 @@
-const uuid = process.env.uuid;
-const axios = require('axios');
 const Docker = require('dockerode');
 const fs = require('fs');
+const { LogsInternal } = require('../../functions/logsModule');
+const ModuleName = "docker";
 
 if (!fs.existsSync('/var/run/docker.sock')) {
     console.error('Socket docker non trouvé');
-    process.exit(1);
+    LogsInternal(ModuleName, { docker: "no-data" });
+
+    setTimeout(() => {
+        process.exit(1);
+    }, 5000);
+    return;
 }
 
 // Créer une instance de Dockerode
@@ -36,41 +41,8 @@ function listAllContainersAndStoreJSON() {
         // const filePath = './data/containers.json';
 
         // Écrire les données JSON dans le fichier
-        SendData(jsonData);
+        LogsInternal(ModuleName, jsonData);
     });
-}
-
-function SendData(Statut) {
-    // Envoie des informations à l'API
-    // const currentDate = new Date();
-    // const DateFull = currentDate.toISOString();
-
-    const nDate = new Date().toLocaleString('fr-FR', {
-        timeZone: 'Europe/Paris'
-    });
-    
-    const timestamp = Date.now(nDate);
-
-    const result = {
-        uuid: uuid,
-        date: timestamp,
-        processName: 'docker',
-        containers: Statut
-    };
-
-    if (fs.existsSync('./dev.lock')) {
-        var dom = "dev.mhemery.fr"
-    } else {
-        var dom = "mhemery.fr"
-    }
-    // Envoi des données à l'API
-    axios.post(`https://${dom}/api/agent/statut`, { result }, { timeout: 2000 })
-        .then((response) => {
-            console.log(response.data);
-        })
-        .catch((error) => {
-            console.error('Erreur lors de la requête :', error.code);
-        });
 }
 
 // Appel de la fonction pour lister tous les containers et les stocker dans un fichier JSON
