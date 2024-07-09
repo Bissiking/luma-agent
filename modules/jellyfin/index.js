@@ -12,12 +12,12 @@ function Check() {
                 LogsInternal(ModuleName, 1);
                 Sat = 1;
             } else {
-                LogsInternal(ModuleName, 1);
+                LogsInternal(ModuleName, 0);
                 Sat = 0;
             }
         })
         .catch((error) => {
-            LogsInternal(ModuleName, 1);
+            LogsInternal(ModuleName, 0);
             Sat = 0;
         });
 
