@@ -1,0 +1,18 @@
+// Trigger pour mettre à jour 'edited_at' sur modification dans 'users'
+db.run(`
+  CREATE TRIGGER IF NOT EXISTS update_users_edited_at
+  AFTER UPDATE ON users
+  FOR EACH ROW
+  BEGIN
+    UPDATE users SET edited_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+  END
+`);
+
+db.run(`
+  CREATE TRIGGER IF NOT EXISTS update_sondes_logs_created_at
+  AFTER INSERT ON sondes_logs
+  FOR EACH ROW
+  BEGIN
+    UPDATE sondes_logs SET created_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+  END
+`);

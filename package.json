@@ -1,7 +1,7 @@
 {
   "name": "luma-agent",
-  "version": "1.0.0",
-  "description": "Si vous utilisez le container, connectez-vous dans la console, puis dans le dossier du projet, passer les trois commandes:",
+  "version": "2.0.0 - ALPHA",
+  "description": "Agent complètement autonome ... Du moins, c'est l'objectif",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -10,10 +10,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^4.19.2",
     "nodemailer": "^6.9.14",
     "os-utils": "^0.0.14",
     "socket.io": "^4.7.5",
+    "sqlite3": "^5.1.7",
     "systeminformation": "^5.23.4"
   }
 }
