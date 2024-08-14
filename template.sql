@@ -55,11 +55,12 @@ CREATE TABLE sondes_logs (
 -- Table de configuration
 CREATE TABLE config (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    web_port INTEGER DEFAULT 80, -- Valeur par défaut pour les ports
-    api_port INTEGER DEFAULT 8080, -- Valeur par défaut pour les ports
-    allow_add_sondes BOOLEAN DEFAULT 1, -- Valeur par défaut TRUE
-    update_auto BOOLEAN DEFAULT 1, -- Valeur par défaut TRUE
-    autostart_os BOOLEAN DEFAULT 0, -- Valeur par défaut FALSE
+    config_name VARCHAR(255) NOT NULL UNIQUE,
+    web_port INTEGER DEFAULT 80,
+    api_port INTEGER DEFAULT 8080,
+    allow_add_sondes BOOLEAN DEFAULT 1,
+    update_auto BOOLEAN DEFAULT 1,
+    autostart_os BOOLEAN DEFAULT 0,
     interface_theme_default VARCHAR(255) DEFAULT 'Default',
-    version_agent VARCHAR(255)
+    config_use TINYINT(255) BOOLEAN 0
 );

@@ -80,7 +80,7 @@ db.serialize(() => {
     update_auto BOOLEAN DEFAULT 1,
     autostart_os BOOLEAN DEFAULT 0,
     interface_theme_default VARCHAR(255) DEFAULT 'Default',
-    version_agent VARCHAR(255)
+    config_use BOOLEAN DEFAULT 0
   );`);
 });
 

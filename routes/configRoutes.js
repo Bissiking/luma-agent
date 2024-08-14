@@ -8,13 +8,12 @@ const agentVersion = packageJson.version;
 
 // Route pour obtenir la version de l'agent
 router.get('/version', (req, res) => {
-    console.log(agentVersion);
     res.json({ version: agentVersion });
 });
 
 // Route pour récupérer la configuration actuelle
 router.get('/configs', (req, res) => {
-    db.all('SELECT config_name FROM config', [], (err, rows) => {
+    db.all('SELECT id, config_name, config_use FROM config', [], (err, rows) => {
         if (err) {
             return res.status(500).json({ message: 'Erreur lors de la récupération des configurations.' });
         }
@@ -46,6 +45,9 @@ router.get('/:configName', (req, res) => {
     });
 });
 
+// ------------------------------------------- //
+// POST //
+
 // Route pour mettre à jour ou insérer une configuration
 router.post('/', (req, res) => {
     const { config_name, web_port, api_port, allow_add_sondes, update_auto, autostart_os, interface_theme_default } = req.body;
@@ -72,6 +74,28 @@ router.post('/', (req, res) => {
             res.json({ message: 'Configuration mise à jour avec succès.' });
         }
     );
+});
+
+router.post('/configs/:id/set-default', (req, res) => {
+    const configId = req.params.id;
+
+    db.serialize(() => {
+        // Mettre toutes les configurations à 0
+        db.run(`UPDATE config SET config_use = 0`, [], function (err) {
+            if (err) {
+                return res.status(500).json({ message: 'Erreur lors de la mise à jour des configurations.' });
+            }
+
+            // Mettre la configuration sélectionnée à 1
+            db.run(`UPDATE config SET config_use = 1 WHERE id = ?`, [configId], function (err) {
+                if (err) {
+                    return res.status(500).json({ message: 'Erreur lors de la mise à jour de la configuration par défaut.' });
+                }
+
+                res.json({ message: 'Configuration définie par défaut avec succès.' });
+            });
+        });
+    });
 });
 
 module.exports = router;
