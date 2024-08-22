@@ -1,0 +1,53 @@
+<!-- views/config-agent-edit.html -->
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Édition de Configuration</title>
+    <link rel="stylesheet" href="/styles/default/styles.css">
+    <link rel="stylesheet" href="/styles/all.min.css">
+</head>
+
+<body>
+    <header>
+        <h1>Édition de Configuration</h1>
+    </header>
+    <main>
+        <div id="loading">Chargement...</div>
+        <div id="error">Erreur lors du chargement des données. </div>
+
+        <form id="configForm" style="display: none;">
+
+            <label for="config_name">Nom de la configuration:</label>
+            <input type="text" id="config_name" name="config_name" required>
+
+            <label for="web_port">Port Web:</label>
+            <input type="number" id="web_port" name="web_port" min="0" max="9999" required>
+
+            <label for="api_port">Port API:</label>
+            <input type="number" id="api_port" name="api_port" min="0" max="9999" required>
+
+            <label for="allow_add_sondes">Autoriser l'ajout de sondes:</label>
+            <input type="checkbox" id="allow_add_sondes" name="allow_add_sondes" value="1">
+
+            <label for="update_auto">Mise à jour automatique:</label>
+            <input type="checkbox" id="update_auto" name="update_auto" value="1">
+
+            <label for="autostart_os">Démarrage automatique avec l'OS:</label>
+            <input type="checkbox" id="autostart_os" name="autostart_os" value="1">
+
+            <label for="interface_theme_default">Thème par défaut:</label>
+            <select id="interface_theme_default" name="interface_theme_default">
+                <option value="light">Clair</option>
+                <option value="dark">Sombre</option>
+            </select>
+
+            <button type="submit">Enregistrer la configuration</button>
+        </form>
+    </main>
+    <script defer src="/scripts/config-agent-edit.js?0"></script>
+</body>
+
+</html>

@@ -1,3 +1,4 @@
+// routes/configRoutes.js
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
@@ -44,6 +45,68 @@ router.get('/:configName', (req, res) => {
         res.json(row);
     });
 });
+
+// Servir le fichier HTML d'édition
+router.get('/edit/:id', (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/config-agent-edit.html'));
+});
+
+// Route pour récupérer une configuration spécifique par ID
+router.get('/config/:id', (req, res) => {
+    const configId = req.params.id;
+    db.get('SELECT * FROM config WHERE id = ?', [configId], (err, row) => {
+        if (err) {
+            return res.status(500).json({ message: 'Erreur lors de la récupération des données.' });
+        }
+        if (!row) {
+            return res.status(404).json({ message: 'Configuration non trouvée.' });
+        }
+        res.json(row);
+    });
+});
+
+
+// ------------------------------------------- //
+// PUT //
+
+// Route pour mettre à jour une configuration spécifique par ID
+router.put('/config/:id', (req, res) => {
+    const configId = req.params.id;
+    const { config_name, web_port, api_port, allow_add_sondes, update_auto, autostart_os, interface_theme_default } = req.body;
+
+    db.run(
+        `UPDATE config SET config_name = ?, web_port = ?, api_port = ?, allow_add_sondes = ?, update_auto = ?, autostart_os = ?, interface_theme_default = ? WHERE id = ?`,
+        [config_name, web_port, api_port, allow_add_sondes, update_auto, autostart_os, interface_theme_default, configId],
+        function (err) {
+            if (err) {
+                return res.status(500).json({ message: 'Erreur lors de la mise à jour des données.' });
+            }
+            res.json({ message: 'Configuration mise à jour avec succès.' });
+        }
+    );
+});
+
+// ------------------------------------------- //
+// DELETE //
+
+// Route pour supprimer une configuration spécifique par ID
+router.delete('/configs/:id', (req, res) => {
+    const configId = req.params.id;
+    
+    // Requête SQL pour supprimer la configuration de la base de données
+    db.run('DELETE FROM config WHERE id = ?', [configId], function(err) {
+        if (err) {
+            return res.status(500).json({ message: 'Erreur lors de la suppression de la configuration.' });
+        }
+        
+        if (this.changes === 0) {
+            return res.status(404).json({ message: 'Configuration non trouvée.' });
+        }
+
+        res.json({ message: 'Configuration supprimée avec succès.' });
+    });
+});
+
 
 // ------------------------------------------- //
 // POST //

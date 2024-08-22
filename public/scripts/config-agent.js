@@ -45,6 +45,22 @@ document.addEventListener('DOMContentLoaded', () => {
                             setDefaultConfig(button.getAttribute('data-id'));
                         });
                     });
+
+                    document.querySelectorAll('.btn-edit').forEach(button => {
+                        button.addEventListener('click', () => {
+                            const configId = button.getAttribute('data-id');
+                            window.location.href = `/config-agent/edit/${configId}`; // Redirige vers la page d'édition avec l'ID
+                        });
+                    });
+
+                    document.querySelectorAll('.btn-delete').forEach(button => {
+                        button.addEventListener('click', () => {
+                            const configId = button.getAttribute('data-id');
+                            if (confirm('Êtes-vous sûr de vouloir supprimer cette configuration ?')) {
+                                deleteConfig(configId);
+                            }
+                        });
+                    });
                 }
             })
             .catch(error => {
@@ -61,6 +77,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 'Content-Type': 'application/json'
             }
         })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(result => {
+                loadConfigs(); // Recharger la liste des configurations après mise à jour
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+            });
+    }
+
+    // Fonction pour supprimer une configuration
+    function deleteConfig(configId) {
+        fetch(`/config-agent/configs/${configId}`, {
+            method: 'DELETE'
+        })
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -68,10 +103,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return response.json();
         })
         .then(result => {
-            loadConfigs(); // Recharger la liste des configurations après mise à jour
+            if (result.message) {
+                alert(result.message);
+                loadConfigs(); // Recharger la liste des configurations après suppression
+            }
         })
         .catch(error => {
-            console.error('Erreur:', error);
+            console.error('Erreur lors de la suppression des données:', error);
         });
     }
 

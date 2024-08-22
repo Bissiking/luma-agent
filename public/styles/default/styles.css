@@ -69,6 +69,7 @@ form {
 }
 
 label {
+    height: 30px;
     font-weight: bold;
     align-self: center;
 }
