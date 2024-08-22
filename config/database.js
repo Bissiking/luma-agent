@@ -1,6 +1,7 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto'); // Importé pour générer des mots de passe sécurisés
 
 // Définir le dossier de la base de données et le fichier
 const dbDir = path.join(__dirname, '../data');
@@ -28,6 +29,7 @@ db.serialize(() => {
     name VARCHAR(255) NOT NULL,
     familyname VARCHAR(255) NOT NULL,
     role VARCHAR(255) NOT NULL CHECK (role IN ('Administrateur', 'Utilisateur')),
+    password VARCHAR(255) NOT NULL,
     interface_theme_default VARCHAR(255) DEFAULT 'Default',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     edited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -81,7 +83,39 @@ db.serialize(() => {
     autostart_os BOOLEAN DEFAULT 0,
     interface_theme_default VARCHAR(255) DEFAULT 'Default',
     config_use BOOLEAN DEFAULT 0
-  );`);
+  )`);
+
+  // Vérifier si un administrateur existe déjà
+  db.get(`SELECT * FROM users WHERE role = 'Administrateur' LIMIT 1`, (err, row) => {
+    if (err) {
+      console.error('Error checking for admin user:', err);
+    } else if (!row) {
+      // Aucune entrée admin n'existe, en créer une
+      const username = 'admin';
+      const name = 'Admin';
+      const familyname = 'User';
+      const role = 'Administrateur';
+      const defaultTheme = 'Default';
+
+      // Générer un mot de passe sécurisé
+      const password = crypto.randomBytes(16).toString('hex');
+
+      db.run(
+        `INSERT INTO users (username, name, familyname, role, password, interface_theme_default) VALUES (?, ?, ?, ?, ?, ?)`,
+        [username, name, familyname, role, password, defaultTheme],
+        function (err) {
+          if (err) {
+            console.error('Error creating default admin user:', err);
+          } else {
+            console.log(`Default admin user created with ID ${this.lastID}`);
+            console.log(`Admin password: ${password}`);
+          }
+        }
+      );
+    } else {
+      console.log('Admin user already exists:', row);
+    }
+  });
 });
 
 // Exporter l'instance de la base de données
