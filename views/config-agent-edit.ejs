@@ -1,19 +1,5 @@
 <!-- views/config-agent-edit.html -->
-<!DOCTYPE html>
-<html lang="fr">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Édition de Configuration</title>
-    <link rel="stylesheet" href="/styles/default/styles.css">
-    <link rel="stylesheet" href="/styles/all.min.css">
-</head>
-
-<body>
-    <header>
-        <h1>Édition de Configuration</h1>
-    </header>
+<%- include('layout/header') %>
     <main>
         <div id="loading">Chargement...</div>
         <div id="error">Erreur lors du chargement des données. </div>
@@ -48,6 +34,4 @@
         </form>
     </main>
     <script defer src="/scripts/config-agent-edit.js?0"></script>
-</body>
-
-</html>
+<%- include('layout/footer') %>

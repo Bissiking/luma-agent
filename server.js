@@ -61,6 +61,10 @@ if (!agentOptions || !agentOptions.token || !agentOptions.name) {
 }
 
 // Configuration des routes
+// Configurer le moteur de template EJS
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
 const indexRoutes = require('./routes/index');
 app.use('/', indexRoutes);
 

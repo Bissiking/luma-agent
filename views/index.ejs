@@ -1,15 +1,4 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Page d'Accueil</title>
-    <link rel="stylesheet" href="/styles/default/styles.css">
-</head>
-<body>
-    <header>
-        <h1>LUMA Supervision</h1>
-    </header>
+<%- include('layout/header') %>
     <main>
         <div class="tiles-container">
             <div class="tile" id="config-agent">
@@ -27,5 +16,4 @@
         </div>
     </main>
     <script src="/scripts/script.js"></script>
-</body>
-</html>
+<%- include('layout/footer') %>

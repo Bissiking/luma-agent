@@ -8,7 +8,7 @@ const configRoutes = require('./configRoutes'); // Assurez-vous que ce fichier e
 
 // Route pour la page d'accueil
 router.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../views/index.html'));
+    res.render('index', { title: 'Accueil' });
 });
 
 // Utilisation des routes spécifiques

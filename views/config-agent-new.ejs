@@ -1,17 +1,4 @@
-<!DOCTYPE html>
-<html lang="fr">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configuration de l'Agent</title>
-    <link rel="stylesheet" href="/styles/default/styles.css">
-</head>
-
-<body>
-    <header>
-        <h1>Configuration de l'Agent</h1>
-    </header>
+<%- include('layout/header') %>
     <main>
         <form id="config-form">
             <label for="config_name">Nom de la Configuration:</label>
@@ -53,6 +40,4 @@
 
     </main>
     <script src="/scripts/config-agent-new.js"></script>
-</body>
-
-</html>
+<%- include('layout/footer') %>

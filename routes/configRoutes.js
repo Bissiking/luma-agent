@@ -24,12 +24,13 @@ router.get('/configs', (req, res) => {
 
 // Route pour servir la page de configuration de l'agent
 router.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../views/config-agent.html'));
+    res.render('config-agent', { title: 'Configurations' });
 });
 
 // Route pour servir la page de configuration de l'agent
 router.get('/new', (req, res) => {
-    res.sendFile(path.join(__dirname, '../views/config-agent-new.html'));
+    // res.sendFile(path.join(__dirname, '../views/config-agent-new.html'));
+    res.render('config-agent-new', { title: 'Nouvelle configuration' });
 });
 
 // Route pour récupérer une configuration spécifique
@@ -48,7 +49,9 @@ router.get('/:configName', (req, res) => {
 
 // Servir le fichier HTML d'édition
 router.get('/edit/:id', (req, res) => {
-    res.sendFile(path.join(__dirname, '../views/config-agent-edit.html'));
+    // res.sendFile(path.join(__dirname, '../views/config-agent-edit.html'));
+    res.render('config-agent-edit', { title: 'Modification d\'une configuration' });
+
 });
 
 // Route pour récupérer une configuration spécifique par ID
@@ -142,23 +145,34 @@ router.post('/', (req, res) => {
 router.post('/configs/:id/set-default', (req, res) => {
     const configId = req.params.id;
 
-    db.serialize(() => {
-        // Mettre toutes les configurations à 0
-        db.run(`UPDATE config SET config_use = 0`, [], function (err) {
-            if (err) {
-                return res.status(500).json({ message: 'Erreur lors de la mise à jour des configurations.' });
-            }
+    // Vérifier si la configuration existe
+    db.get('SELECT * FROM config WHERE id = ?', [configId], (err, row) => {
+        if (err) {
+            return res.status(500).json({ message: 'Erreur lors de la vérification de la configuration.' });
+        }
+        if (!row) {
+            return res.status(404).json({ message: 'Configuration non trouvée.' });
+        }
 
-            // Mettre la configuration sélectionnée à 1
-            db.run(`UPDATE config SET config_use = 1 WHERE id = ?`, [configId], function (err) {
+        db.serialize(() => {
+            // Mettre toutes les configurations à 0
+            db.run(`UPDATE config SET config_use = 0`, [], function (err) {
                 if (err) {
-                    return res.status(500).json({ message: 'Erreur lors de la mise à jour de la configuration par défaut.' });
+                    return res.status(500).json({ message: 'Erreur lors de la mise à jour des configurations.' });
                 }
 
-                res.json({ message: 'Configuration définie par défaut avec succès.' });
+                // Mettre la configuration sélectionnée à 1
+                db.run(`UPDATE config SET config_use = 1 WHERE id = ?`, [configId], function (err) {
+                    if (err) {
+                        return res.status(500).json({ message: 'Erreur lors de la mise à jour de la configuration par défaut.' });
+                    }
+
+                    res.json({ message: 'Configuration définie par défaut avec succès.' });
+                });
             });
         });
     });
 });
+
 
 module.exports = router;
