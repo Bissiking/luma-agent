@@ -1,0 +1,17 @@
+<%- include('layout/header') %>
+<main>
+    <form id="login-form" method="POST" action="/login">
+        <div>
+            <label for="username">Identifiant</label>
+            <input type="text" id="username" name="username" placeholder="Identifiant" required>
+        </div>
+        <div>
+            <label for="password">Mot de Passe</label>
+            <input type="password" id="password" name="password" placeholder="Mot de Passe" required>
+        </div>
+        <button type="submit">Connexion</button>
+    </form>
+    <p id="error-message" style="color: red;"></p>
+</main>
+<script src="scripts/login.js"></script>
+<%- include('layout/footer') %>

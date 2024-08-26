@@ -13,6 +13,33 @@ header {
     text-align: center;
 }
 
+/* NAV */
+ul{
+    margin: 0px;
+    list-style: none;
+    display: flex;
+    justify-content: space-around;
+    background: rgb(76 175 80 / 50%);
+}
+
+li{
+    display: flex;
+}
+
+a{
+    text-decoration: none;
+    color: white;
+    padding: 5px 10px;
+    transition: 0.3s;
+}
+
+a:hover{
+    background-color: rgba(221, 221, 221, 0.8);
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+
 main {
     max-width: 800px;
     margin: 20px auto;

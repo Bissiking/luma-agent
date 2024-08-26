@@ -4,6 +4,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('config-agent').addEventListener('click', () => {
         window.location.href = '/config-agent'; // Redirection vers la page de configuration de l'agent
     });
+
+    document.getElementById('list-module').addEventListener('click', () => {
+        window.location.href = '/modules'; // Redirection vers la page de configuration de l'agent
+    });
     // document.getElementById('config-users').addEventListener('click', () => {
     //     window.location.href = '/config-users'; // Redirection vers la page de configuration des utilisateurs
     // });

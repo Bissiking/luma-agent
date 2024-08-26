@@ -1,0 +1,6 @@
+{
+    "name": "RAM",
+    "description": "Sonde qui récupère l'état de la RAM",
+    "configuration": false,
+    "version": "1.0.0"
+}

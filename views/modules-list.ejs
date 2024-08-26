@@ -1,0 +1,37 @@
+<!-- views/modules-list.ejs -->
+<%- include('layout/header') %>
+<link rel="stylesheet" href="/styles/default/list-module.css">
+<main>
+    <h2>Liste des Modules</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Nom du Module</th>
+                <th>Version</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if (modules.length > 0) { %>
+                <% modules.forEach(module => { %>
+                    <tr class="<%= module.status === 'stopped' ? 'stopped-module' : '' %>">
+                        <td><%= module.name %></td>
+                        <td><%= module.version %></td>
+                        <td>
+                            <% if (module.configuration) { %>
+                                <a href="/modules/edit/<%= module.id %>" class="btn-edit">Éditer</a>
+                            <% } %>
+                            <button class="btn-delete" data-id="<%= module.id %>">Supprimer</button>
+                        </td>
+                    </tr>
+                <% }); %>
+            <% } else { %>
+                <tr>
+                    <td colspan="3">Aucun module trouvé.</td>
+                </tr>
+            <% } %>
+        </tbody>
+    </table>
+</main>
+<script src="/scripts/modules.js"></script>
+<%- include('layout/footer') %>

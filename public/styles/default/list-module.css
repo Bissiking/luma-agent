@@ -1,0 +1,60 @@
+/* Styles pour le tableau des modules */
+table {
+    width: 100%;
+    border-collapse: collapse; /* Évite les espaces entre les bordures des cellules */
+    margin: 20px 0; /* Espace au-dessus et en-dessous du tableau */
+}
+
+th, td {
+    padding: 12px; /* Espacement interne des cellules */
+    text-align: left; /* Alignement du texte à gauche */
+    border-bottom: 1px solid #ddd; /* Bordure légère entre les lignes */
+}
+
+th {
+    background-color: #f4f4f4; /* Couleur de fond des en-têtes de colonne */
+}
+
+tr:hover {
+    background-color: #f1f1f1; /* Couleur de fond au survol des lignes */
+}
+
+/* Style pour les lignes des modules stoppés */
+tr.stopped-module {
+    background-color: #f8d7da; /* Rouge clair pour le fond */
+    color: #721c24; /* Rouge foncé pour le texte */
+}
+
+/* Styles pour le bouton d'édition */
+.btn-edit {
+    background-color: #007bff; /* Bleu */
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    text-decoration: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-edit:hover {
+    background-color: #0056b3; /* Bleu foncé */
+}
+
+/* Styles pour le bouton de suppression */
+.btn-delete {
+    background-color: #dc3545; /* Rouge */
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-delete:hover {
+    background-color: #c82333; /* Rouge foncé */
+}
+
+/* Ajustement pour espacer plus les lignes du tableau */
+tr:not(.stopped-module) td {
+    padding: 16px; /* Augmentation de l'espacement interne des cellules */
+}

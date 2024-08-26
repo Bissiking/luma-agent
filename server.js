@@ -4,10 +4,28 @@ const fs = require('fs');
 const crypto = require('crypto'); // Utilisé pour générer un token aléatoire
 const db = require('./config/database'); // Importer le module de base de données
 const { dbFile } = require('./config/database');
+const session = require('express-session');
 
 // Configuration du serveur Express
 const app = express();
 const port = process.env.PORT || 3000;
+
+// Configurer les sessions
+app.use(session({
+    secret: 'mzPV%fbYE9#A4g89#4i2fbMaitXq^K^Q8%x^Zx5tCwTyiJK2Ajy8T8wZvkca4EBt%drPY!t^wt##Ez%qR%$H^f6VzynUySeHEEf2P7!akJ9f', // Remplacez par une chaîne secrète pour signer les sessions
+    resave: false,          // Ne pas resauvegarder la session si elle n'est pas modifiée
+    saveUninitialized: true // Sauvegarder une session non initialisée
+}));
+
+function checkAuthentication(req, res, next) {
+    if (req.session.user) {
+        // Si l'utilisateur est connecté, continuer vers la route demandée
+        next();
+    } else {
+        // Si l'utilisateur n'est pas connecté, rediriger vers la page de connexion
+        res.redirect('/login');
+    }
+}
 
 // Middleware pour traiter les données JSON
 app.use(express.json());
@@ -60,13 +78,60 @@ if (!agentOptions || !agentOptions.token || !agentOptions.name) {
     console.log('New Agent Info generated and saved:', agentOptions);
 }
 
-// Configuration des routes
+// Middleware pour injecter isAuthenticated dans toutes les vues
+app.use((req, res, next) => {
+    res.locals.isAuthenticated = req.session.user ? true : false;
+    next();
+});
+
 // Configurer le moteur de template EJS
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+// Route de connexion accessible sans authentification
+app.get('/login', (req, res) => {
+    res.render('login', { title: 'Connexion' });
+});
+
+app.post('/login', (req, res) => {
+    const { username, password } = req.body;
+
+    // Exemple de vérification de l'utilisateur dans la base de données
+    db.get('SELECT * FROM users WHERE username = ?', [username], (err, user) => {
+        if (err) {
+            return res.status(500).json({ message: 'Erreur du serveur' });
+        }
+
+        if (!user || user.password !== password) {
+            return res.status(401).json({ message: 'Identifiant ou mot de passe incorrect' });
+        }
+
+        // Si les identifiants sont corrects, créer une session ou un token
+        req.session.user = user;
+        res.json({ message: 'Connexion réussie' });
+    });
+});
+
+// Route pour la déconnexion
+app.get('/logout', (req, res) => {
+    req.session.destroy(err => {
+        if (err) {
+            return res.redirect('/');
+        }
+        res.clearCookie('connect.sid');
+        res.redirect('/login');
+    });
+});
+
+// Appliquer le middleware à toutes les routes suivantes
+app.use(checkAuthentication);
+
+// Toutes les routes définies après cette ligne seront protégées
 const indexRoutes = require('./routes/index');
 app.use('/', indexRoutes);
+
+const moduleRoutes = require('./routes/moduleRoutes');
+app.use('/', moduleRoutes);
 
 // Démarrer le serveur
 app.listen(port, () => {

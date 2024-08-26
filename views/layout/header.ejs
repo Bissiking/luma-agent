@@ -13,8 +13,13 @@
     </header>
     <nav>
         <ul>
-            <li>Accueil</li>
-            <li>Se connecter</li>
-            <li>EMPTY</li>
+            <li><a href="/">Accueil</a></li>
+            <% if (isAuthenticated) { %>
+                <li><a href="/logout">Se déconnecter</a></li>
+            <% } else { %>
+                <li><a href="/login">Se connecter</a></li>
+            <% } %>
         </ul>
     </nav>
+    
+    

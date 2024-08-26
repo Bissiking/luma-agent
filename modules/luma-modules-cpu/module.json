@@ -1,0 +1,6 @@
+{
+    "name": "CPU",
+    "description": "Sonde qui récupère l'état CPU",
+    "configuration": false,
+    "version": "1.0.0"
+}
