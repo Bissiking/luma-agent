@@ -14,7 +14,7 @@
         <tbody>
             <% if (modules.length > 0) { %>
                 <% modules.forEach(module => { %>
-                    <tr class="<%= module.status === 'stopped' ? 'stopped-module' : '' %>">
+                    <tr class="<%= module.isRunning ? '' : 'stopped-module' %>">
                         <td><%= module.name %></td>
                         <td><%= module.version %></td>
                         <td>

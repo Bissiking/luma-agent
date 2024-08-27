@@ -3,21 +3,27 @@ const fs = require('fs');
 
 function loadModules() {
     const modulesDir = path.join(__dirname, '../modules'); // Chemin vers le dossier des modules
+    const pidDir = path.join(__dirname, '../data/pid'); // Chemin vers le dossier des PIDs
     const modules = [];
 
     fs.readdirSync(modulesDir).forEach(dir => {
         const modulePath = path.join(modulesDir, dir);
         const moduleJsonPath = path.join(modulePath, 'module.json');
-        const statusJsonPath = path.join(modulePath, 'module-status.json');
+        const pidFilePath = path.join(pidDir, `${dir}.pid`);
 
-        if (fs.existsSync(moduleJsonPath) && fs.existsSync(statusJsonPath)) {
+        console.log(dir);
+
+        if (fs.existsSync(moduleJsonPath)) {
             const moduleInfo = JSON.parse(fs.readFileSync(moduleJsonPath, 'utf-8'));
-            const statusInfo = JSON.parse(fs.readFileSync(statusJsonPath, 'utf-8'));
+
+            // Vérifier si le fichier PID existe
+            const isRunning = fs.existsSync(pidFilePath);
+
 
             modules.push({
                 ...moduleInfo,
-                status: statusInfo.status, // Status from the status file
-                id: dir, // Using directory name as ID
+                id: dir, // Utiliser le nom du dossier comme ID
+                isRunning: isRunning // Ajouter l'état d'exécution basé sur la présence du fichier PID
             });
         }
     });

@@ -1,17 +1,27 @@
-// Module de CPU
-
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
 // Chemin du fichier de configuration
-const configPath = path.join(__dirname, '../config/config.json');
+const configPath = path.join(__dirname, './config.json');
+
+// Modèle de configuration par défaut
+const defaultConfig = {
+    status: "stopped",
+    cpuCheckInterval: 60000 // Intervalle en millisecondes (60 secondes)
+};
+
+// Fonction pour vérifier et créer la configuration si nécessaire
+function ensureConfigExists() {
+    if (!fs.existsSync(configPath)) {
+        console.log('Configuration file not found. Creating a default configuration...');
+        fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2), 'utf-8');
+    }
+}
 
 // Fonction pour lire la configuration
 function readConfig() {
-    if (!fs.existsSync(configPath)) {
-        throw new Error('Configuration file not found');
-    }
+    ensureConfigExists(); // Assurer que le fichier de configuration existe
     const configData = fs.readFileSync(configPath, 'utf-8');
     return JSON.parse(configData);
 }
