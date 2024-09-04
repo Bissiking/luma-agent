@@ -1,10 +1,11 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
-const crypto = require('crypto'); // Utilisé pour générer un token aléatoire
-const db = require('./config/database'); // Importer le module de base de données
+const crypto = require('crypto');
+const db = require('./config/database');
 const { dbFile } = require('./config/database');
 const session = require('express-session');
+const { fork } = require('child_process'); // Importer le module pour forker les processus
 
 // Configuration du serveur Express
 const app = express();
@@ -13,10 +14,11 @@ const port = process.env.PORT || 3000;
 // Configurer les sessions
 app.use(session({
     secret: 'mzPV%fbYE9#A4g89#4i2fbMaitXq^K^Q8%x^Zx5tCwTyiJK2Ajy8T8wZvkca4EBt%drPY!t^wt##Ez%qR%$H^f6VzynUySeHEEf2P7!akJ9f', // Remplacez par une chaîne secrète pour signer les sessions
-    resave: false,          // Ne pas resauvegarder la session si elle n'est pas modifiée
-    saveUninitialized: true // Sauvegarder une session non initialisée
+    resave: false,
+    saveUninitialized: true
 }));
 
+// Définition de la fonction checkAuthentication
 function checkAuthentication(req, res, next) {
     if (req.session.user) {
         // Si l'utilisateur est connecté, continuer vers la route demandée
@@ -43,7 +45,6 @@ const filePath = path.join(dataDir, 'agent-info.json');
 // Vérifier si le fichier agent-info.json existe déjà
 let agentOptions;
 if (fs.existsSync(filePath)) {
-    // Lire le contenu du fichier existant
     const fileContent = fs.readFileSync(filePath, 'utf-8');
     try {
         agentOptions = JSON.parse(fileContent);
@@ -68,15 +69,18 @@ if (!agentOptions || !agentOptions.token || !agentOptions.name) {
         arch: require('os').arch(),
     };
 
-    // Créer le dossier 'data' s'il n'existe pas
     if (!fs.existsSync(dataDir)) {
         fs.mkdirSync(dataDir);
     }
 
-    // Écrire les informations dans agent-info.json
     fs.writeFileSync(filePath, JSON.stringify(agentOptions, null, 2), 'utf-8');
     console.log('New Agent Info generated and saved:', agentOptions);
 }
+
+// Fork du processus de surveillance des disques
+const diskMonitorProcess = fork(path.join(__dirname, 'modules/luma-module-disk/index.js'));
+const cpuMonitorProcess = fork(path.join(__dirname, 'modules/luma-module-cpu/index.js'));
+const ramMonitorProcess = fork(path.join(__dirname, 'modules/luma-module-ram/index.js'));
 
 // Middleware pour injecter isAuthenticated dans toutes les vues
 app.use((req, res, next) => {
@@ -96,7 +100,6 @@ app.get('/login', (req, res) => {
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
 
-    // Exemple de vérification de l'utilisateur dans la base de données
     db.get('SELECT * FROM users WHERE username = ?', [username], (err, user) => {
         if (err) {
             return res.status(500).json({ message: 'Erreur du serveur' });
@@ -106,7 +109,6 @@ app.post('/login', (req, res) => {
             return res.status(401).json({ message: 'Identifiant ou mot de passe incorrect' });
         }
 
-        // Si les identifiants sont corrects, créer une session ou un token
         req.session.user = user;
         res.json({ message: 'Connexion réussie' });
     });

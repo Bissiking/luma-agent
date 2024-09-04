@@ -4,14 +4,17 @@
   "description": "Agent complètement autonome ... Du moins, c'est l'objectif",
   "main": "index.js",
   "scripts": {
+    "start": "npm i && node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^1.7.7",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
+    "dotenv": "^16.4.5",
     "ejs": "^3.1.10",
     "express": "^4.19.2",
     "express-session": "^1.18.0",
@@ -20,6 +23,6 @@
     "os-utils": "^0.0.14",
     "socket.io": "^4.7.5",
     "sqlite3": "^5.1.7",
-    "systeminformation": "^5.23.4"
+    "systeminformation": "^5.23.5"
   }
 }

@@ -1,6 +1,7 @@
 # Data
 data
 dev.lock
+modules/*/config.json
 
 # Logs
 logs
