@@ -1,0 +1,6 @@
+{
+    "name": "Service Check",
+    "description": "Sonde qui récupère l'état des services",
+    "configuration": false,
+    "version": "1.0.0"
+}

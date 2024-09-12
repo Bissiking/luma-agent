@@ -2,7 +2,6 @@ const os = require('os');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
-require('dotenv').config();
 
 // Chemin du dossier pour stocker les fichiers d'état des notifications
 const statusDir = path.join(__dirname, '../../data/ram');
