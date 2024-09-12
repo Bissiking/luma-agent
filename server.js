@@ -126,6 +126,9 @@ app.get('/logout', (req, res) => {
     });
 });
 
+const sondeRoutes = require('./routes/sondeRoutes');
+app.use('/api/sondes', sondeRoutes);
+
 // Appliquer le middleware à toutes les routes suivantes
 app.use(checkAuthentication);
 
@@ -134,7 +137,7 @@ const indexRoutes = require('./routes/index');
 app.use('/', indexRoutes);
 
 const moduleRoutes = require('./routes/moduleRoutes');
-app.use('/', moduleRoutes);
+app.use('/modules', moduleRoutes);
 
 // Démarrer le serveur
 app.listen(port, () => {

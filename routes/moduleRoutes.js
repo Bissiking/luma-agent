@@ -9,14 +9,14 @@ const modulesDir = path.join(__dirname, '../modules');
 const { loadModules } = require('../utils/moduleUtils'); // Importer la fonction loadModules
 
 // Route pour afficher la liste des modules
-router.get('/modules', (req, res) => {
+router.get('/', (req, res) => {
     const modules = loadModules(); // Charger les modules
 
     res.render('modules-list', { modules });
 });
 
 // Route pour éditer un module spécifique
-router.get('/modules/edit/:id', (req, res) => {
+router.get('/edit/:id', (req, res) => {
     const moduleId = req.params.id;
     const modulePath = path.join(modulesDir, moduleId, 'module.json');
 
@@ -29,7 +29,7 @@ router.get('/modules/edit/:id', (req, res) => {
 });
 
 // Route pour supprimer un module spécifique
-router.delete('/modules/:id', (req, res) => {
+router.delete('/:id', (req, res) => {
     const moduleId = req.params.id;
     const modulePath = path.join(modulesDir, moduleId);
 
@@ -46,7 +46,7 @@ router.delete('/modules/:id', (req, res) => {
 });
 
 // Route pour démarrer un module spécifique
-router.post('/modules/start/:id', (req, res) => {
+router.post('/start/:id', (req, res) => {
     const moduleId = req.params.id;
     const statusFilePath = path.join(modulesDir, moduleId, 'module-status.json');
 
@@ -62,7 +62,7 @@ router.post('/modules/start/:id', (req, res) => {
 });
 
 // Route pour arrêter un module spécifique
-router.post('/modules/stop/:id', (req, res) => {
+router.post('/stop/:id', (req, res) => {
     const moduleId = req.params.id;
     const statusFilePath = path.join(modulesDir, moduleId, 'module-status.json');
 
