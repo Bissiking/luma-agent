@@ -2,5 +2,6 @@
     "name": "Disk",
     "description": "Sonde qui récupère l'état des disques",
     "configuration": false,
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "timeCheck": 15000
 }
