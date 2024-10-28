@@ -78,10 +78,7 @@ if (!agentOptions || !agentOptions.token || !agentOptions.name) {
 }
 
 // Fork du processus de surveillance des disques
-// const diskMonitorProcess = fork(path.join(__dirname, 'modules/luma-module-disk/index.js'));
-// const cpuMonitorProcess = fork(path.join(__dirname, 'modules/luma-module-cpu/index.js'));
-// const ramMonitorProcess = fork(path.join(__dirname, 'modules/luma-module-ram/index.js'));
-const serviceCheckMonitorProcess = fork(path.join(__dirname, 'modules/luma-module-serviceCheck/index.js'));
+const diskMonitorProcess = fork(path.join(__dirname, 'modules/luma-module-disk/index.js'), [15000]);
 
 // Middleware pour injecter isAuthenticated dans toutes les vues
 app.use((req, res, next) => {
@@ -126,9 +123,6 @@ app.get('/logout', (req, res) => {
     });
 });
 
-const sondeRoutes = require('./routes/sondeRoutes');
-app.use('/api/sondes', sondeRoutes);
-
 // Appliquer le middleware à toutes les routes suivantes
 app.use(checkAuthentication);
 
@@ -137,7 +131,7 @@ const indexRoutes = require('./routes/index');
 app.use('/', indexRoutes);
 
 const moduleRoutes = require('./routes/moduleRoutes');
-app.use('/modules', moduleRoutes);
+app.use('/', moduleRoutes);
 
 // Démarrer le serveur
 app.listen(port, () => {
