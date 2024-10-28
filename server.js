@@ -6,6 +6,7 @@ const db = require('./config/database');
 const { dbFile } = require('./config/database');
 const session = require('express-session');
 const { fork } = require('child_process'); // Importer le module pour forker les processus
+require('dotenv').config();
 
 // Configuration du serveur Express
 const app = express();
