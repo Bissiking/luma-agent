@@ -64,7 +64,7 @@ if (!agentOptions || !agentOptions.token || !agentOptions.name) {
         token: agentOptions?.token || generateToken(),
         name: agentOptions?.name || agentName,
         timestamp: new Date().toISOString(),
-        version: '1.0.0',
+        version: '2.0.0-Light',
         os: require('os').type(),
         platform: require('os').platform(),
         arch: require('os').arch(),
