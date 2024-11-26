@@ -1,4 +1,4 @@
-const db = require('./config/database');
+const db = require('./database');
 
 function getAgentConfig(callback) {
     const queryDefaultConfig = `

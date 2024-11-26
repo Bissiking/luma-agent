@@ -79,7 +79,7 @@ db.serialize(() => {
     web_port INTEGER DEFAULT 80,
     api_port INTEGER DEFAULT 8080,
     allow_add_sondes BOOLEAN DEFAULT 1,
-    update_auto BOOLEAN DEFAULT 1,
+    update_auto BOOLEAN DEFAULT 0,
     autostart_os BOOLEAN DEFAULT 0,
     interface_theme_default VARCHAR(255) DEFAULT 'Default',
     config_use BOOLEAN DEFAULT 0
