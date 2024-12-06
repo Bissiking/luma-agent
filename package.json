@@ -4,7 +4,7 @@
   "description": "Agent complètement autonome ... Du moins, c'est l'objectif",
   "main": "index.js",
   "scripts": {
-    "start": "npm i && node server.js",
+    "start": "npm i && node src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
