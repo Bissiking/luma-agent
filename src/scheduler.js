@@ -1,5 +1,6 @@
 const { getBasicMetrics } = require('./utils/metrics');
 const { getServicesStatus } = require('./utils/services');
+const { checkDockerContainers, isDockerAvailable } = require('./utils/docker');
 const { sendMetricsToLuma } = require('./api/client');
 const { log } = require('./utils/logger');
 var Monitor = null;
@@ -18,13 +19,20 @@ async function startScheduler(config) {
             // Collecte des métriques de base
             const basicMetrics = getBasicMetrics();
 
-            // Collecte des statuts des services (attendre la résolution)
+            // Collecte des statuts des services
             const serviceMetrics = await getServicesStatus(Monitor || []);
+
+            // Vérification de Docker et collecte des conteneurs
+            let dockerMetrics = false; // Par défaut, Docker est indisponible
+            if (isDockerAvailable()) {
+                dockerMetrics = await checkDockerContainers();
+            }
 
             // Agrégation des métriques
             const metrics = {
                 ...basicMetrics,
                 services: serviceMetrics,
+                docker: dockerMetrics,
             };
 
             log('info', `Métriques collectées : ${JSON.stringify(metrics)}`);

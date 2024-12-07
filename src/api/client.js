@@ -44,6 +44,7 @@ function sendMetricsToLuma(metrics) {
     // Envoi des métriques
     axios.post(`${apiUrl}/api/agent/metrics`, metrics, { headers })
         .then((response) => {
+            console.log('//////// SEND DATA /////////');
             console.log(response.data);
         })
         .catch((error) => {
