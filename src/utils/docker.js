@@ -4,13 +4,18 @@ const { exec } = require('child_process');
 // Vérifie si le fichier docker.sock existe
 function isDockerAvailable() {
     const dockerSockPath = '/var/run/docker.sock';
-    return fs.existsSync(dockerSockPath);
+    const dockerSockVar = fs.existsSync(dockerSockPath);
+    console.log(dockerSockPath);
+    
+    return dockerSockVar
 }
 
 // Vérifie les conteneurs Docker si docker.sock est présent
 function checkDockerContainers() {
     return new Promise((resolve, reject) => {
         if (!isDockerAvailable()) {
+            console.log('DOCKER OFF -> '+isDockerAvailable());
+            
             resolve(false); // Si Docker n'est pas disponible
             return;
         }
