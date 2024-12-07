@@ -64,15 +64,4 @@ async function getServicesStatus(services) {
     return serviceStatuses;
 }
 
-// Exemple d'utilisation
-(async () => {
-    const services = ['nginx', 'docker', 'NonExistentService']; // Exemple pour Linux
-    try {
-        const statuses = await getServicesStatus(services);
-        console.log('Statuts des services :', statuses);
-    } catch (error) {
-        console.error('Erreur lors de la récupération des statuts :', error.message);
-    }
-})();
-
 module.exports = { getServicesStatus };
