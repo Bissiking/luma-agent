@@ -23,10 +23,7 @@ async function startScheduler(config) {
             const serviceMetrics = await getServicesStatus(Monitor || []);
 
             // Vérification de Docker et collecte des conteneurs
-            let dockerMetrics = false; // Par défaut, Docker est indisponible
-            if (isDockerAvailable()) {
-                dockerMetrics = await checkDockerContainers();
-            }
+            const dockerMetrics = await checkDockerContainers();
 
             // Agrégation des métriques
             const metrics = {
