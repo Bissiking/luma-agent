@@ -1,32 +1,59 @@
 const { exec } = require('child_process');
 
+// Vérifie si le service est en cours d'exécution (Windows ou Linux)
 function checkServiceStatus(serviceName) {
     return new Promise((resolve, reject) => {
-        // Commande PowerShell
-        const command = `powershell -Command "try { Get-Service -Name '${serviceName}' -ErrorAction Stop | Select-Object -ExpandProperty Status } catch { 'Not Found' }"`;
+        const isWindows = process.platform === 'win32'; // Détection de l'OS
+
+        // Commande adaptée à l'OS
+        const command = isWindows
+            ? `powershell -Command "try { Get-Service -Name '${serviceName}' -ErrorAction Stop | Select-Object -ExpandProperty Status } catch { 'Not Found' }"`
+            : `systemctl is-active --quiet '${serviceName}' && echo 'active' || echo 'inactive'`;
 
         exec(command, (error, stdout, stderr) => {
-            if (error) {
-                reject(new Error(stderr || error.message));
+            if (error && isWindows) {
+                // Gestion des erreurs pour Windows
+                const errorMessage = stderr || error.message;
+                if (errorMessage.includes('Not Found')) {
+                    resolve('nonexistent'); // Service introuvable
+                } else {
+                    reject(new Error(errorMessage));
+                }
+                return;
+            } else if (error && !isWindows) {
+                // Gestion des erreurs pour Linux
+                resolve('nonexistent'); // Si le service n'existe pas
                 return;
             }
 
-            const status = stdout.trim(); // Nettoyer les espaces et lignes vides
-            if (status === 'Not Found') {
-                resolve('nonexistent'); // Service introuvable
-            } else if (status === 'Running') {
-                resolve('running'); // Service en cours d'exécution
-            } else if (status === 'Stopped') {
-                resolve('stopped'); // Service arrêté
+            // Nettoyer le résultat
+            const status = stdout.trim();
+            if (isWindows) {
+                if (status === 'Not Found') {
+                    resolve('nonexistent');
+                } else if (status === 'Running') {
+                    resolve('running');
+                } else if (status === 'Stopped') {
+                    resolve('stopped');
+                } else {
+                    resolve('unknown');
+                }
             } else {
-                resolve('unknown'); // État inconnu
+                // Linux : Résultat de `systemctl is-active`
+                if (status === 'active') {
+                    resolve('running');
+                } else if (status === 'inactive') {
+                    resolve('stopped');
+                } else {
+                    resolve('unknown'); // Autres états
+                }
             }
         });
     });
 }
 
+// Vérifie les statuts d'une liste de services
 async function getServicesStatus(services) {
-    // Liste des promesses pour chaque service
     const serviceStatuses = await Promise.all(
         services.map(async service => ({
             name: service,
@@ -34,11 +61,12 @@ async function getServicesStatus(services) {
         }))
     );
 
-    return serviceStatuses; // Retourne le tableau des statuts résolus
+    return serviceStatuses;
 }
 
 // Exemple d'utilisation
 (async () => {
+    const services = ['nginx', 'docker', 'NonExistentService']; // Exemple pour Linux
     try {
         const statuses = await getServicesStatus(services);
         console.log('Statuts des services :', statuses);
