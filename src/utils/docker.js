@@ -6,7 +6,7 @@ const docker = new Docker({ socketPath: '/var/run/docker.sock' });
 async function checkDockerContainers() {
     try {
         // Récupère les conteneurs
-        const containers = await docker.listContainers();
+        const containers = await docker.listContainers({ all: true });
 
         // Formate les données des conteneurs
         const containerStatuses = containers.map(container => ({
