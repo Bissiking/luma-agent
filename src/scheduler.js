@@ -17,7 +17,7 @@ async function startScheduler(config) {
             console.log(Monitor);
 
             // Collecte des métriques de base
-            const basicMetrics = getBasicMetrics();
+            const basicMetrics = await getBasicMetrics();
 
             // Collecte des statuts des services
             const serviceMetrics = await getServicesStatus(Monitor || []);

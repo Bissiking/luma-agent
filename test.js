@@ -57,4 +57,12 @@ async function getBasicMetrics() {
     return { cpu, ram, disks };
 }
 
-module.exports = { getBasicMetrics };
+// // Appel et affichage des métriques
+// (async () => {
+//     const disk = await getBasicMetrics();
+//     const cpu = await getBasicMetrics();
+//     const ram = await getBasicMetrics();
+//     console.log(disk);
+//     console.log(cpu);
+//     console.log(ram);
+// })();
