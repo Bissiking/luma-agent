@@ -5,28 +5,51 @@ const { log } = require('../utils/logger');
 const agentUuid = process.env.AGENT_UUID;
 const agentToken = process.env.AGENT_TOKEN;
 const apiUrl = process.env.API_URL;
+const version = require('../../package.json');
 
 async function fetchAgentConfig(config) {
     try {
+        // Effectuer une requête GET pour récupérer la configuration de l'agent
         const response = await axios.get(`${apiUrl}/api/agent/config`, {
             headers: {
                 'X-Agent-UUID': agentUuid,
                 'X-Agent-Token': agentToken,
+                'X-Agent-Version': version.version
             }
         });
 
+        // Vérification du succès de la réponse
         if (response.data.success) {
             log('info', 'Configuration récupérée avec succès.');
             return response.data.config;
         } else {
-            log('error', `Echec lors de la récupération de la configuration : ${response.data}`);
+            log(
+                'error',
+                `Échec lors de la récupération de la configuration : ${response.data.message || 'Réponse inattendue.'}`
+            );
             return null;
         }
     } catch (error) {
-        log('error', `Erreur lors de la récupération de la configuration : ${error}`);
+        // Vérifier si l'erreur provient de la réponse ou de la requête
+        if (error.response) {
+            // Erreur côté serveur (exemple : 401, 404, etc.)
+            log(
+                'error',
+                `Erreur côté serveur lors de la récupération de la configuration : ${error.response.data.message || error.response.statusText}`
+            );
+        } else if (error.request) {
+            // Aucun retour du serveur (exemple : problème réseau)
+            log('error', 'Aucune réponse du serveur. Vérifiez votre connexion ou le point d\'accès API.');
+        } else {
+            // Erreur lors de la configuration de la requête
+            log('error', `Erreur lors de la configuration de la requête : ${error.message}`);
+        }
+
+        // Retourner `null` en cas d'échec
         return null;
     }
 }
+
 
 /**
  * Envoie les métriques système à LUMA.
