@@ -37,6 +37,7 @@ async function getDiskMetrics() {
             .filter(disk => disk._blocks && disk._filesystem) // Ignorer les disques vides
             .map(disk => ({
                 filesystem: disk._filesystem,
+                mounted: disk._mounted,
                 size: disk._blocks,
                 used: disk._used,
                 available: disk._available,
@@ -47,6 +48,7 @@ async function getDiskMetrics() {
         return [];
     }
 }
+
 
 // Fonction principale pour combiner toutes les métriques
 async function getBasicMetrics() {
