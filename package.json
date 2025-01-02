@@ -1,6 +1,6 @@
 {
   "name": "luma-agent",
-  "version": "2.0.0-Light - BETA",
+  "version": "2.0.1-Light - BETA",
   "description": "Agent complètement autonome ... Du moins, c'est l'objectif",
   "main": "index.js",
   "scripts": {

@@ -1,5 +1,5 @@
 const { getBasicMetrics } = require('./utils/metrics');
-const { getServicesStatus } = require('./utils/services');
+const { getAllServicesWithStatus } = require('./utils/services');
 const { checkDockerContainers, isDockerAvailable } = require('./utils/docker');
 const { sendMetricsToLuma } = require('./api/client');
 const { log } = require('./utils/logger');
@@ -20,7 +20,7 @@ async function startScheduler(config) {
             const basicMetrics = await getBasicMetrics();
 
             // Collecte des statuts des services
-            const serviceMetrics = await getServicesStatus(Monitor || []);
+            const serviceMetrics = await getAllServicesWithStatus(Monitor || []);
 
             // Vérification de Docker et collecte des conteneurs
             const dockerMetrics = await checkDockerContainers();
