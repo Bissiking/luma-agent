@@ -3,14 +3,13 @@ const { exec } = require('child_process');
 // Fonction pour récupérer tous les services avec leurs statuts
 function getAllServicesWithStatus() {
     return new Promise((resolve, reject) => {
-        const isWindows = process.platform === 'win32'; // Détection de l'OS
+        const isWindows = process.platform === 'win32';
 
         if (!isWindows) {
             reject('Cette commande est uniquement disponible sous Windows.');
             return;
         }
 
-        // Commande PowerShell pour récupérer les services sous Windows
         const command = `powershell -Command "Get-Service | ConvertTo-Json -Depth 1"`;
 
         exec(command, (error, stdout, stderr) => {
@@ -20,11 +19,18 @@ function getAllServicesWithStatus() {
             }
 
             try {
-                // Traitement des résultats JSON de PowerShell
-                const services = JSON.parse(stdout).map(service => ({
-                    name: service.Name,
-                    status: service.Status.toLowerCase(),
-                }));
+                // Analyse du JSON retourné
+                const rawServices = JSON.parse(stdout);
+
+                // Assurez-vous que rawServices est un tableau
+                const services = Array.isArray(rawServices)
+                    ? rawServices.map(service => ({
+                          name: service.Name || 'Unknown', // Nom par défaut si absent
+                          status: typeof service.Status === 'string'
+                              ? service.Status.toLowerCase()
+                              : 'unknown', // Statut par défaut si non disponible
+                      }))
+                    : [];
 
                 resolve(services);
             } catch (parseError) {

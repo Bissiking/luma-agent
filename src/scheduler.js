@@ -35,7 +35,7 @@ async function startScheduler(config) {
             log('info', `Métriques collectées : ${JSON.stringify(metrics)}`);
 
             // Envoi des métriques
-            await sendMetricsToLuma(metrics);
+            sendMetricsToLuma(metrics);
         } catch (error) {
             log('error', `Erreur lors de la collecte des métriques : ${error.message}`);
         }
