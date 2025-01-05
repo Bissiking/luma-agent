@@ -8,7 +8,7 @@ function getCpuMetrics() {
 
     // Calculer l'utilisation globale du CPU
     const totalCores = cpus.length;
-    const totalSpeed = cpus.reduce((sum, cpu) => sum + cpu.speed, 0); // Fréquence totale en MHz
+    const totalSpeed = cpus[0].speed; // Fréquence totale en MHz
 
     return {
         totalCores,

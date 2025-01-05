@@ -1,11 +1,11 @@
 {
   "name": "luma-agent",
-  "version": "2.0.1-Light - BETA",
+  "version": "2.0.2-Light - BETA",
   "description": "Agent complètement autonome ... Du moins, c'est l'objectif",
   "main": "index.js",
   "scripts": {
     "start": "npm i && node src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node test.js"
   },
   "keywords": [],
   "author": "",
