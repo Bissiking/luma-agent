@@ -6,7 +6,7 @@ function getAllServicesWithStatus() {
         const isWindows = process.platform === 'win32';
 
         if (!isWindows) {
-            reject('Cette commande est uniquement disponible sous Windows.');
+            resolve('[]');
             return;
         }
 
