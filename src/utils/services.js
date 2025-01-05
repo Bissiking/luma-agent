@@ -8,7 +8,7 @@ function getAllServicesWithStatus() {
         // Commande adaptée à l'OS
         const command = isWindows
             ? `powershell -Command "Get-Service | ConvertTo-Json -Depth 1"`
-            : `systemctl list-units --type=service --all --no-pager --no-legend | awk '{print $1, $4}'`;
+            : false;
 
         exec(command, (error, stdout, stderr) => {
             if (error) {
