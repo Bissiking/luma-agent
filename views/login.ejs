@@ -1,17 +1,51 @@
-<%- include('layout/header') %>
-<main>
-    <form id="login-form" method="POST" action="/login">
-        <div>
-            <label for="username">Identifiant</label>
-            <input type="text" id="username" name="username" placeholder="Identifiant" required>
-        </div>
-        <div>
-            <label for="password">Mot de Passe</label>
-            <input type="password" id="password" name="password" placeholder="Mot de Passe" required>
-        </div>
-        <button type="submit">Connexion</button>
-    </form>
-    <p id="error-message" style="color: red;"></p>
-</main>
-<script src="scripts/login.js"></script>
-<%- include('layout/footer') %>
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="<%= LUMA_API_URL %>/css/pages/connexion.css">
+    <%- include('layout/head') %>
+    <title>Connexion</title>
+</head>
+
+<body>
+    <main>
+        <section class="login-container">
+            <div class="login-box">
+                <h1>Connexion</h1>
+                <p>Connectez-vous à votre compte LUMA</p>
+
+                <!-- Formulaire de connexion -->
+                <form id="login-form" class="login-form">
+                    <!-- Boutons de sélection du mode de connexion -->
+                    <div class="form-group toggle-login-mode">
+                        <button type="button" id="login-luma" class="btn-secondary active">Connexion LUMA</button>
+                    </div>
+
+                    <!-- Champ identifiant -->
+                    <div class="form-group">
+                        <label for="identifiant">Identifiant</label>
+                        <input type="text" id="identifiant" name="identifiant" placeholder="Entrez votre identifiant"
+                            required>
+                    </div>
+
+                    <!-- Champ mot de passe -->
+                    <div class="form-group">
+                        <label for="password">Mot de passe</label>
+                        <input type="password" id="password" name="password" placeholder="Entrez votre mot de passe"
+                            required>
+                    </div>
+
+                    <!-- Indicateur du mode de connexion -->
+                    <input type="hidden" id="loginMode" name="loginMode" value="luma">
+
+                    <!-- Bouton de soumission -->
+                    <button type="submit" class="btn-primary">Se connecter</button>
+                </form>
+            </div>
+        </section>
+    </main>
+</body>
+
+</html>

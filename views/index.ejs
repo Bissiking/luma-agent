@@ -1,22 +1,16 @@
-<%- include('layout/header') %>
-    <main>
-        <div class="tiles-container">
-            <div class="tile" id="config-agent">
-                <h2>Configuration de l'agent</h2>
-            </div>
-            <div class="tile disabled" id="config-users">
-                <h2>Configuration des utilisateurs</h2>
-            </div>
-            <div class="tile disabled" id="download-module">
-                <h2>Télécharger un module</h2>
-            </div>
-            <div class="tile" id="list-module">
-                <h2>Liste des modules</h2>
-            </div>
-            <div class="tile disabled" id="supervision">
-                <h2>Supervision</h2>
-            </div>
-        </div>
-    </main>
-    <script src="/scripts/script.js"></script>
-<%- include('layout/footer') %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+</head>
+<body>
+    <h1>Bienvenue, <%= user ? user.username : 'Visiteur' %>!</h1>
+    <% if (user) { %>
+        <a href="/dashboard">Accéder au tableau de bord</a> | <a href="/auth/logout">Déconnexion</a>
+    <% } else { %>
+        <a href="/auth/login">Connexion</a>
+    <% } %>
+</body>
+</html>

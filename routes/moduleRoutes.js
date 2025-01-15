@@ -1,79 +1,32 @@
-// routes/moduleRoutes.js
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
+const checkAuthentication = require('../middlewares/check-authentication'); // Middleware pour protéger les routes
+const { allQuery } = require('../config/db-utils'); // Utilitaire pour interagir avec la base de données
+
 const router = express.Router();
 
-// Dossier des modules
-const modulesDir = path.join(__dirname, '../modules');
-const { loadModules } = require('../utils/moduleUtils'); // Importer la fonction loadModules
-
-// Route pour afficher la liste des modules
-router.get('/', (req, res) => {
-    const modules = loadModules(); // Charger les modules
-
-    res.render('modules-list', { modules });
-});
-
-// Route pour éditer un module spécifique
-router.get('/edit/:id', (req, res) => {
-    const moduleId = req.params.id;
-    const modulePath = path.join(modulesDir, moduleId, 'module.json');
-
-    if (fs.existsSync(modulePath)) {
-        const moduleInfo = JSON.parse(fs.readFileSync(modulePath, 'utf-8'));
-        res.render('module-edit', { moduleId, ...moduleInfo });
-    } else {
-        res.status(404).json({ message: 'Module non trouvé.' });
+// Exemple : Route pour afficher tous les modules (nécessite une authentification)
+router.get('/modules', checkAuthentication, async (req, res) => {
+    try {
+        const modules = await allQuery('SELECT * FROM modules'); // Requête à la base de données
+        res.render('modules', { title: 'Modules disponibles', modules, user: req.session.user });
+    } catch (err) {
+        console.error('Erreur lors de la récupération des modules :', err.message);
+        res.status(500).send('Erreur interne du serveur.');
     }
 });
 
-// Route pour supprimer un module spécifique
-router.delete('/:id', (req, res) => {
+// Exemple : Route pour accéder à un module spécifique
+router.get('/modules/:id', checkAuthentication, async (req, res) => {
     const moduleId = req.params.id;
-    const modulePath = path.join(modulesDir, moduleId);
-
-    if (fs.existsSync(modulePath)) {
-        fs.rm(modulePath, { recursive: true, force: true }, err => {
-            if (err) {
-                return res.status(500).json({ message: 'Erreur lors de la suppression du module.' });
-            }
-            res.json({ message: 'Module supprimé avec succès.' });
-        });
-    } else {
-        res.status(404).json({ message: 'Module non trouvé.' });
-    }
-});
-
-// Route pour démarrer un module spécifique
-router.post('/start/:id', (req, res) => {
-    const moduleId = req.params.id;
-    const statusFilePath = path.join(modulesDir, moduleId, 'module-status.json');
-
-    if (fs.existsSync(statusFilePath)) {
-        const statusInfo = JSON.parse(fs.readFileSync(statusFilePath, 'utf-8'));
-        statusInfo.status = 'running';
-
-        fs.writeFileSync(statusFilePath, JSON.stringify(statusInfo, null, 2), 'utf-8');
-        res.json({ success: true });
-    } else {
-        res.status(404).json({ success: false, message: 'Module non trouvé' });
-    }
-});
-
-// Route pour arrêter un module spécifique
-router.post('/stop/:id', (req, res) => {
-    const moduleId = req.params.id;
-    const statusFilePath = path.join(modulesDir, moduleId, 'module-status.json');
-
-    if (fs.existsSync(statusFilePath)) {
-        const statusInfo = JSON.parse(fs.readFileSync(statusFilePath, 'utf-8'));
-        statusInfo.status = 'stopped';
-
-        fs.writeFileSync(statusFilePath, JSON.stringify(statusInfo, null, 2), 'utf-8');
-        res.json({ success: true });
-    } else {
-        res.status(404).json({ success: false, message: 'Module non trouvé' });
+    try {
+        const module = await allQuery('SELECT * FROM modules WHERE id = ?', [moduleId]);
+        if (!module.length) {
+            return res.status(404).send('Module introuvable.');
+        }
+        res.render('module-detail', { title: 'Détail du module', module: module[0], user: req.session.user });
+    } catch (err) {
+        console.error('Erreur lors de la récupération du module :', err.message);
+        res.status(500).send('Erreur interne du serveur.');
     }
 });
 

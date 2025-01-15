@@ -1,18 +1,16 @@
 const express = require('express');
-const path = require('path');
+const checkAuthentication = require('../middlewares/check-authentication'); // Middleware pour protéger certaines routes
+
 const router = express.Router();
 
-// Import des routes spécifiques
-const sondeRoutes = require('./sondeRoutes'); // Assurez-vous que ce fichier existe
-const configRoutes = require('./configRoutes'); // Assurez-vous que ce fichier existe
-
-// Route pour la page d'accueil
+// Route principale (page d'accueil)
 router.get('/', (req, res) => {
-    res.render('index', { title: 'Accueil' });
+    res.render('index', { title: 'Accueil', user: req.session.user || null });
 });
 
-// Utilisation des routes spécifiques
-router.use('/sondes', sondeRoutes);
-router.use('/config-agent', configRoutes);
+// Route protégée (nécessite une authentification)
+router.get('/dashboard', checkAuthentication, (req, res) => {
+    res.render('dashboard', { title: 'Tableau de bord', user: req.session.user });
+});
 
 module.exports = router;
