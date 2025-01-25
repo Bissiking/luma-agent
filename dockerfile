@@ -8,7 +8,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y git
 
 # Cloner le dépôt GitHub
-RUN git clone https://github.com/Bissiking/luma-agent.git .
+RUN git clone https://github.com/Bissiking/luma-agent.git --branch agent-v2-light .
 
 # Installer les dépendances du projet
 RUN npm install
