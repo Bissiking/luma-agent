@@ -52,8 +52,7 @@ async def main():
         logger.error(f"Error: {e}")
     finally:
         # Nettoyage
-        for module in module_manager.get_all_modules():
-            await module.cleanup()
+        await module_manager.cleanup()
         await http_client.close()
 
 if __name__ == "__main__":

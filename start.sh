@@ -30,20 +30,29 @@ fi
 
 print_color "$GREEN" "Python $PYTHON_VERSION détecté"
 
-# Créer et activer l'environnement virtuel si nécessaire
-if [ ! -d "venv" ]; then
-    print_color "$YELLOW" "Création de l'environnement virtuel..."
-    python3 -m venv venv
+# Supprimer l'ancien environnement virtuel s'il existe
+if [ -d "venv" ]; then
+    print_color "$YELLOW" "Suppression de l'ancien environnement virtuel..."
+    rm -rf venv
 fi
+
+# Créer un nouvel environnement virtuel
+print_color "$YELLOW" "Création de l'environnement virtuel..."
+python3 -m venv venv
 
 # Activer l'environnement virtuel
 print_color "$YELLOW" "Activation de l'environnement virtuel..."
 source venv/bin/activate
 
-# Installer/mettre à jour les dépendances
-print_color "$YELLOW" "Installation/mise à jour des dépendances..."
-python -m pip install --upgrade pip
-pip install -r requirements.txt
+# Installer/réparer pip
+print_color "$YELLOW" "Installation/réparation de pip..."
+curl -o get-pip.py https://bootstrap.pypa.io/get-pip.py
+python get-pip.py --force-reinstall
+rm get-pip.py
+
+# Installer les dépendances
+print_color "$YELLOW" "Installation des dépendances..."
+python -m pip install -r requirements.txt
 
 # Vérifier si le fichier .env existe
 if [ ! -f ".env" ]; then

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{title}}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -52,82 +53,106 @@
             background: #e3f2fd;
             border-radius: 4px;
         }
+        .nav {
+            background: #f8f9fa;
+            padding: 1rem;
+            margin-bottom: 2rem;
+        }
+        .nav-link {
+            color: #007bff;
+            text-decoration: none;
+            margin-right: 1rem;
+        }
+        .nav-link:hover {
+            text-decoration: underline;
+        }
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            padding: 1rem;
+        }
+        .card h2 {
+            margin-top: 0;
+            color: #333;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="card">
-            <h1>{{title}}</h1>
-            <div id="system-info">
-                <h2>Informations Système</h2>
-                <div id="metrics"></div>
-            </div>
-        </div>
+        <nav class="nav">
+            <a href="/" class="nav-link">Accueil</a>
+            <a href="/config" class="nav-link">Configuration</a>
+        </nav>
 
-        <div class="card">
-            <h2>Modules</h2>
-            <div id="modules-list"></div>
+        <h1>{{title}}</h1>
+        
+        <div class="dashboard">
+            <div class="card">
+                <h2>État du Système</h2>
+                <div id="systemInfo">
+                    Chargement...
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Modules</h2>
+                <div id="modulesList">
+                    Chargement...
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        // Mise à jour des informations système
-        async function updateSystemInfo() {
+        // Fonction pour charger les informations système
+        async function loadSystemInfo() {
             try {
                 const response = await fetch('/api/system');
                 const data = await response.json();
                 
-                const metrics = document.getElementById('metrics');
-                metrics.innerHTML = `
-                    <div class="metric">CPU: ${data.resources.cpu_percent}%</div>
-                    <div class="metric">RAM: ${data.resources.memory_percent}%</div>
-                    <div class="metric">Disque: ${data.resources.disk_percent}%</div>
+                const systemInfo = document.getElementById('systemInfo');
+                systemInfo.innerHTML = `
+                    <p>CPU: ${data.cpu_percent}%</p>
+                    <p>Mémoire: ${data.memory_percent}%</p>
+                    <p>Disque: ${data.disk_percent}%</p>
                 `;
             } catch (error) {
-                console.error('Erreur:', error);
+                console.error('Erreur lors du chargement des informations système:', error);
             }
         }
 
-        // Mise à jour de la liste des modules
-        async function updateModules() {
+        // Fonction pour charger la liste des modules
+        async function loadModules() {
             try {
                 const response = await fetch('/api/modules');
                 const modules = await response.json();
                 
-                const modulesList = document.getElementById('modules-list');
-                modulesList.innerHTML = modules.map(module => `
-                    <div class="module ${module.enabled ? 'enabled' : 'disabled'}">
-                        <h3>${module.name}</h3>
-                        <p>État: ${module.enabled ? 'Activé' : 'Désactivé'}</p>
-                        <button class="btn" onclick="toggleModule('${module.name}')">
-                            ${module.enabled ? 'Désactiver' : 'Activer'}
-                        </button>
-                    </div>
-                `).join('');
+                const modulesList = document.getElementById('modulesList');
+                modulesList.innerHTML = Object.entries(modules)
+                    .map(([name, status]) => `
+                        <div>
+                            <strong>${name}</strong>: 
+                            <span style="color: ${status.enabled ? 'green' : 'red'}">
+                                ${status.enabled ? 'Actif' : 'Inactif'}
+                            </span>
+                        </div>
+                    `)
+                    .join('');
             } catch (error) {
-                console.error('Erreur:', error);
+                console.error('Erreur lors du chargement des modules:', error);
             }
         }
 
-        // Active/désactive un module
-        async function toggleModule(name) {
-            try {
-                await fetch(`/api/modules/${name}/toggle`, {
-                    method: 'POST'
-                });
-                updateModules();
-            } catch (error) {
-                console.error('Erreur:', error);
-            }
-        }
+        // Charger les données initiales
+        loadSystemInfo();
+        loadModules();
 
-        // Mise à jour périodique
-        setInterval(updateSystemInfo, 5000);
-        setInterval(updateModules, 5000);
-
-        // Première mise à jour
-        updateSystemInfo();
-        updateModules();
+        // Rafraîchir les données toutes les 5 secondes
+        setInterval(() => {
+            loadSystemInfo();
+            loadModules();
+        }, 5000);
     </script>
 </body>
 </html> 

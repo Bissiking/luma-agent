@@ -30,20 +30,29 @@ if ([version]$pythonVersion -lt $minVersion) {
 
 Write-ColorOutput Green "Python $pythonVersion détecté"
 
-# Créer et activer l'environnement virtuel si nécessaire
-if (-not (Test-Path "venv")) {
-    Write-ColorOutput Yellow "Création de l'environnement virtuel..."
-    python -m venv venv
+# Supprimer l'ancien environnement virtuel s'il existe
+if (Test-Path "venv") {
+    Write-ColorOutput Yellow "Suppression de l'ancien environnement virtuel..."
+    Remove-Item -Recurse -Force venv
 }
+
+# Créer un nouvel environnement virtuel
+Write-ColorOutput Yellow "Création de l'environnement virtuel..."
+python -m venv venv
 
 # Activer l'environnement virtuel
 Write-ColorOutput Yellow "Activation de l'environnement virtuel..."
 & .\venv\Scripts\Activate.ps1
 
-# Installer/mettre à jour les dépendances
-Write-ColorOutput Yellow "Installation/mise à jour des dépendances..."
-python -m pip install --upgrade pip
-pip install -r requirements.txt
+# Installer/réparer pip
+Write-ColorOutput Yellow "Installation/réparation de pip..."
+Invoke-WebRequest -Uri https://bootstrap.pypa.io/get-pip.py -OutFile get-pip.py
+python get-pip.py --force-reinstall
+Remove-Item get-pip.py
+
+# Installer les dépendances
+Write-ColorOutput Yellow "Installation des dépendances..."
+python -m pip install -r requirements.txt
 
 # Vérifier si le fichier .env existe
 if (-not (Test-Path ".env")) {

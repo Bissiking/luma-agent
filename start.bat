@@ -22,20 +22,29 @@ if errorlevel 1 (
 for /f "tokens=2" %%I in ('python --version 2^>^&1') do set "PYTHON_VERSION=%%I"
 echo Version Python detectee: %PYTHON_VERSION%
 
-:: Créer et activer l'environnement virtuel si nécessaire
-if not exist "venv" (
-    call :colorEcho %YELLOW% "Creation de l'environnement virtuel..."
-    python -m venv venv
+:: Supprimer l'ancien environnement virtuel s'il existe
+if exist "venv" (
+    call :colorEcho %YELLOW% "Suppression de l'ancien environnement virtuel..."
+    rmdir /s /q venv
 )
+
+:: Créer un nouvel environnement virtuel
+call :colorEcho %YELLOW% "Creation de l'environnement virtuel..."
+python -m venv venv
 
 :: Activer l'environnement virtuel
 call :colorEcho %YELLOW% "Activation de l'environnement virtuel..."
 call venv\Scripts\activate.bat
 
-:: Installer/mettre à jour les dépendances
-call :colorEcho %YELLOW% "Installation/mise a jour des dependances..."
-python -m pip install --upgrade pip
-pip install -r requirements.txt
+:: Installer/réparer pip
+call :colorEcho %YELLOW% "Installation/reparation de pip..."
+curl -o get-pip.py https://bootstrap.pypa.io/get-pip.py
+python get-pip.py --force-reinstall
+del get-pip.py
+
+:: Installer les dépendances
+call :colorEcho %YELLOW% "Installation des dependances..."
+python -m pip install -r requirements.txt
 
 :: Vérifier si le fichier .env existe
 if not exist ".env" (

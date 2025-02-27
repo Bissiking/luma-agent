@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Type
 from pathlib import Path
 from core.base_module import BaseModule
 from core.utils import get_logger
+from core.http_client import HTTPClient
 
 class ModuleManager:
     def __init__(self):
@@ -12,6 +13,7 @@ class ModuleManager:
         self.logger = get_logger("module_manager")
         self.modules_dir = Path("modules")
         self.modules_dir.mkdir(exist_ok=True)
+        self.http_client = HTTPClient()
 
     async def load_all_modules(self):
         """Load all modules from the modules directory"""
@@ -128,4 +130,10 @@ class ModuleManager:
 
     def get_module_status(self) -> List[Dict]:
         """Get status of all modules"""
-        return [module.get_status() for module in self.modules.values()] 
+        return [module.get_status() for module in self.modules.values()]
+
+    async def cleanup(self):
+        """Cleanup all modules and resources"""
+        for module in self.get_all_modules():
+            await module.cleanup()
+        await self.http_client.close() 

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .config-form {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .form-actions {
+            margin-top: 2rem;
+            text-align: right;
+        }
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        .alert {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 4px;
+            display: none;
+        }
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{{title}}</h1>
+        
+        <div class="alert alert-success" id="successAlert"></div>
+        <div class="alert alert-error" id="errorAlert"></div>
+
+        <div class="config-form">
+            <form id="configForm">
+                <div class="form-group">
+                    <label for="LUMA_TOKEN">Token LUMA</label>
+                    <input type="password" id="LUMA_TOKEN" name="LUMA_TOKEN" value="{{config.LUMA_TOKEN}}">
+                </div>
+
+                <div class="form-group">
+                    <label for="LUMA_API_URL">URL API LUMA</label>
+                    <input type="url" id="LUMA_API_URL" name="LUMA_API_URL" value="{{config.LUMA_API_URL}}">
+                </div>
+
+                <div class="form-group">
+                    <label for="DISCORD_WEBHOOK_URL">URL Webhook Discord</label>
+                    <input type="url" id="DISCORD_WEBHOOK_URL" name="DISCORD_WEBHOOK_URL" value="{{config.DISCORD_WEBHOOK_URL}}">
+                </div>
+
+                <div class="form-group">
+                    <label for="LOG_LEVEL">Niveau de Log</label>
+                    <select id="LOG_LEVEL" name="LOG_LEVEL">
+                        <option value="DEBUG" {{config.LOG_LEVEL == 'DEBUG' ? 'selected' : ''}}>DEBUG</option>
+                        <option value="INFO" {{config.LOG_LEVEL == 'INFO' ? 'selected' : ''}}>INFO</option>
+                        <option value="WARNING" {{config.LOG_LEVEL == 'WARNING' ? 'selected' : ''}}>WARNING</option>
+                        <option value="ERROR" {{config.LOG_LEVEL == 'ERROR' ? 'selected' : ''}}>ERROR</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="WEB_HOST">Hôte Web</label>
+                    <input type="text" id="WEB_HOST" name="WEB_HOST" value="{{config.WEB_HOST}}">
+                </div>
+
+                <div class="form-group">
+                    <label for="WEB_PORT">Port Web</label>
+                    <input type="number" id="WEB_PORT" name="WEB_PORT" value="{{config.WEB_PORT}}">
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Sauvegarder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('configForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const config = {};
+            for (let [key, value] of formData.entries()) {
+                config[key] = value;
+            }
+
+            try {
+                const response = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(config)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showAlert('successAlert', result.message);
+                } else {
+                    showAlert('errorAlert', result.message || 'Erreur lors de la mise à jour de la configuration');
+                }
+            } catch (error) {
+                showAlert('errorAlert', 'Erreur lors de la communication avec le serveur');
+            }
+        });
+
+        function showAlert(alertId, message) {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => alert.style.display = 'none');
+
+            const alert = document.getElementById(alertId);
+            alert.textContent = message;
+            alert.style.display = 'block';
+
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html> 

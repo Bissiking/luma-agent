@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 import logging
 from typing import Any, Dict, Optional
-from discord_webhook import AsyncDiscordWebhook
 from core.utils import get_logger
 
 class BaseModule(ABC):
@@ -56,8 +55,14 @@ class BaseModule(ABC):
                 self.logger.warning("No Discord webhook URL configured")
                 return False
 
-            webhook = AsyncDiscordWebhook(url=url, content=message)
-            await webhook.execute()
+            # Utiliser le client HTTP global
+            http_client = self.module_manager.http_client
+            payload = {
+                "content": message,
+                "username": "LUMA Agent"
+            }
+            
+            await http_client.post(url, payload)
             return True
         except Exception as e:
             self.logger.error(f"Failed to send Discord notification: {e}")
