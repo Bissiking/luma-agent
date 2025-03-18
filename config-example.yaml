@@ -1,96 +1,50 @@
-# Configuration exemple pour l'agent de monitoring "P-2.0.0-Grizzly"
+# Configuration minimale pour l'agent LUMA
+# Ce fichier ne contient que les informations nécessaires pour se connecter à l'API
+# La configuration complète sera récupérée depuis LUMA
 
-# Configuration de l'agent
-agent:
-  version: "P-2.0.0-Grizzly"  # Version de l'agent
-  remote_config: true         # Activer la configuration distante
-  log_level: "info"           # Niveau de logs (debug, info, warning, error)
-  log_file: "logs/agent.log"  # Fichier de logs
-  interval: 60                # Intervalle de collecte en secondes
-  checkin_interval: 300       # Intervalle de check-in en secondes (5 minutes)
-  
-  # Configuration des mises à jour automatiques
-  auto_update:
-    enabled: true                # Activer les mises à jour automatiques
-    interval: 86400              # Intervalle de vérification en secondes (24h)
-    update_url: "https://votre-domaine.com/api/v1/monitoring/updates"  # URL pour les mises à jour
-
-# Configuration du tampon de métriques
-metrics_buffer:
-  enabled: true                # Activer le tampon de métriques
-  file_path: "data/metrics_buffer.json"  # Chemin du fichier de stockage
-  max_size: 1000               # Nombre maximum d'entrées
-  retention_period: 86400      # Durée de conservation en secondes (24h)
-  flush_interval: 300          # Intervalle d'envoi en secondes (5min)
-  batch_size: 50               # Nombre maximum d'entrées par lot
-
-# Configuration de l'API (OBLIGATOIRE)
+# Informations d'API (OBLIGATOIRES)
 api:
-  base_url: "https://votre-domaine.com/api/v1/monitoring"  # URL de base de l'API
-  uuid: "votre-uuid-unique"    # UUID unique de l'agent (généré automatiquement si non spécifié)
-  token: "votre-token-secret"  # Token d'authentification (généré automatiquement si non spécifié)
-  timeout: 30                  # Timeout en secondes
+  # URL de base de l'API LUMA (OBLIGATOIRE)
+  base_url: "https://dev.mhemery.fr/api"
+  
+  # UUID de l'agent (OBLIGATOIRE)
+  # Identifiant unique attribué à cet agent
+  uuid: "00000000-0000-0000-0000-000000000000"
+  
+  # Token d'authentification (OBLIGATOIRE)
+  # Token sécurisé pour l'authentification auprès de l'API
+  token: "your-api-token-goes-here"
+  
+  # Timeout des requêtes en secondes (Optionnel, défaut: 30)
+  timeout: 30
 
-# Configuration des collecteurs
-collectors:
-  # Collecteur CPU
-  cpu:
-    enabled: true              # Activer le collecteur
-    interval: 1                # Intervalle pour le calcul de l'utilisation CPU
-  
-  # Collecteur mémoire
-  memory:
-    enabled: true              # Activer le collecteur
-  
-  # Collecteur disque
-  disk:
-    enabled: true              # Activer le collecteur
-    excludes: ["tmpfs", "/dev", "/sys", "/proc"]  # Systèmes de fichiers à exclure
-  
-  # Collecteur réseau
-  network:
-    enabled: true              # Activer le collecteur
-    interval: 10               # Intervalle pour le calcul des taux
-    excludes: ["lo"]           # Interfaces à exclure
-  
-  # Collecteur Docker
-  docker:
-    enabled: true              # Activer le collecteur
-    socket_path: "/var/run/docker.sock"  # Chemin du socket Docker
-  
-  # Collecteur de services web
-  web_service:
-    enabled: false             # Activer le collecteur
-    timeout: 10                # Timeout pour les requêtes HTTP
-    services:                  # Liste des services à surveiller
-      - name: "API Locale"
-        url: "http://localhost:8080/health"
-        method: "GET"
-        expected_status: 200
-        headers: {}
-      - name: "Site Web"
-        url: "https://example.com"
-        method: "GET"
-        expected_status: 200
-        headers: {}
+# REMARQUE:
+# Le reste de la configuration sera téléchargée depuis LUMA
+# Si aucune configuration n'existe sur LUMA, l'agent tentera d'en créer une
+# avec les valeurs par défaut. Voir src/constants.py pour ces valeurs.
 
-# Configuration des alertes
-alerts:
-  # Alerte CPU haute
-  high_cpu:
-    enabled: true              # Activer l'alerte
-    threshold: 80              # Seuil en pourcentage
-    duration: 300              # Durée en secondes
-  
-  # Alerte mémoire haute
-  high_memory:
-    enabled: true              # Activer l'alerte
-    threshold: 85              # Seuil en pourcentage
-    duration: 300              # Durée en secondes
-  
-  # Alerte disque plein
-  high_disk:
-    enabled: true              # Activer l'alerte
-    threshold: 90              # Seuil en pourcentage
-    duration: 600              # Durée en secondes
-    partitions: ["*"]          # Partitions à surveiller ("*" pour toutes) 
+# EXEMPLE DE CONFIGURATION COMPLÈTE (pour référence)
+# Décommentez et modifiez ces sections si vous souhaitez utiliser une configuration locale
+
+# agent:
+#   log_level: "info"
+#   log_file: "logs/agent.log"
+#   interval: 60
+
+# collectors:
+#   # Collecteur de services Windows/Linux
+#   service:
+#     enabled: true
+#     interval: 300  # Collecte toutes les 5 minutes
+#     services: ["*"]  # Tous les services ("*") ou liste spécifique
+#     max_services: 50  # Limite le nombre de services collectés
+#     priority_services:  # Services toujours collectés même si max_services est atteint
+#       - "mysql"
+#       - "apache2"
+#       - "httpd"
+#       - "postgresql"
+#       - "sqlserver"
+#       - "nginx"
+#     excludes:  # Services à exclure de la collecte
+#       - "TermService"  # Remote Desktop sous Windows
+#       - "gpsvc"        # Group Policy Client sous Windows 

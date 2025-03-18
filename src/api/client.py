@@ -9,6 +9,7 @@ import requests
 from urllib.parse import urljoin
 
 from .routes import ApiRoutes
+from src.constants import VERSION, DEFAULT_CONFIG
 
 try:
     import cpuinfo
@@ -222,53 +223,144 @@ class ApiClient:
         except:
             return "127.0.0.1"
     
+    def _get_platform_info(self) -> Dict[str, Any]:
+        """
+        Obtient des informations sur la plateforme système
+        
+        Returns:
+            Dict[str, Any]: Informations sur la plateforme
+        """
+        try:
+            return {
+                "system": platform.system(),
+                "release": platform.release(),
+                "version": platform.version(),
+                "machine": platform.machine(),
+                "processor": platform.processor()
+            }
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération des informations de plateforme: {e}")
+            return {
+                "system": platform.system(),
+                "error": str(e)
+            }
+            
+    def _get_collector_status(self) -> Dict[str, bool]:
+        """
+        Retourne l'état des collecteurs
+        
+        Returns:
+            Dict[str, bool]: État des collecteurs (activé/désactivé)
+        """
+        # Dans une implémentation réelle, cela proviendrait de la configuration
+        return {
+            "cpu": True,
+            "memory": True,
+            "disk": True,
+            "network": True,
+            "docker": False,
+            "web_service": False
+        }
+    
     def checkin(self) -> Dict[str, Any]:
         """
-        Signale que l'agent est actif au serveur central
+        Enregistrement périodique de l'agent auprès du serveur LUMA
+        
+        Retourne les informations sur l'agent, y compris la configuration et
+        les instructions du serveur.
         
         Returns:
             Dict[str, Any]: Réponse du serveur
         """
-        endpoint = ApiRoutes.CHECKIN
-        
-        # Ajouter la version comme paramètre de requête
-        params = {
-            'version': self.agent_version
-        }
-        
-        # Données de base pour le check-in (selon la documentation de l'API)
-        data = {
-            'version': self.agent_version,
-            'hostname': self._get_hostname(),
-            'ip_address': self._get_ip_address(),
-            'system_info': self._get_system_info(),
-            'checkin_time': int(time.time())
-        }
-        
-        response = self._make_request("POST", endpoint, data, params)
-        
-        # Si la réponse contient une configuration, on la retourne
-        if 'data' in response and 'config' in response['data']:
-            return response['data']['config']
-        
-        return response
+        try:
+            endpoint = ApiRoutes.CHECKIN
+            
+            # Préparer les données pour l'enregistrement
+            checkin_data = {
+                "timestamp": int(time.time()),
+                "status": "active",
+                "agent_info": {
+                    "version": VERSION,  # Utilise la version depuis constants.py
+                    "hostname": self._get_hostname(),
+                    "platform": self._get_platform_info(),
+                    "collectors": self._get_collector_status()
+                }
+            }
+            
+            response = self._make_request(
+                "POST",
+                endpoint,
+                data=checkin_data
+            )
+            
+            # Traiter la réponse
+            if response:
+                logger.debug("Enregistrement réussi auprès du serveur LUMA")
+                return response
+            else:
+                logger.warning("Aucune réponse reçue pour l'enregistrement")
+                return {}
+        except Exception as e:
+            logger.error(f"Erreur lors de l'enregistrement: {str(e)}")
+            return {"error": str(e)}
     
     def get_configuration(self) -> Dict[str, Any]:
         """
-        Récupère la configuration depuis le serveur central
+        Récupère la configuration de l'agent depuis LUMA
+        
+        Cette méthode récupère la configuration complète de l'agent depuis LUMA.
+        Si aucune configuration n'existe, l'agent essaie de la créer sur LUMA
+        en utilisant le modèle de configuration par défaut.
         
         Returns:
-            Dict[str, Any]: Configuration de l'agent
+            Dict[str, Any]: Configuration de l'agent ou None en cas d'erreur
         """
-        endpoint = ApiRoutes.CONFIGURATION
-        response = self._make_request("GET", endpoint)
+        try:
+            logger.info("Récupération de la configuration depuis LUMA...")
+            endpoint = ApiRoutes.CONFIG
+            
+            # Ajouter la version en paramètre
+            params = {
+                'version': VERSION
+            }
+            
+            # Première tentative : récupération de la configuration
+            response = self._make_request("GET", endpoint, params=params)
+            
+            # Si une configuration est trouvée, la retourner
+            if response and 'data' in response and 'config' in response['data']:
+                logger.info("Configuration trouvée sur LUMA")
+                return response['data']['config']
+            
+            # Si aucune configuration n'est trouvée, essayer de la créer
+            logger.warning("Aucune configuration trouvée sur LUMA, tentative de création...")
+            
+            # Créer une configuration par défaut avec les valeurs de l'agent
+            default_config = DEFAULT_CONFIG.copy()
+            
+            # Ajouter les informations système de base
+            default_config['agent']['version'] = VERSION
+            default_config['agent']['hostname'] = self._get_hostname()
+            default_config['agent']['platform'] = self._get_platform_info()
+            
+            # Préserver les informations d'API
+            default_config['api']['base_url'] = self.base_url
+            default_config['api']['uuid'] = self.agent_uuid
+            default_config['api']['token'] = self.agent_token
+            
+            # Envoyer la configuration par défaut
+            creation_response = self._make_request("POST", endpoint, data=default_config, params=params)
+            
+            if creation_response and 'data' in creation_response and 'config' in creation_response['data']:
+                logger.info("Configuration créée avec succès sur LUMA")
+                return creation_response['data']['config']
+            
+            logger.error("Impossible de créer une configuration sur LUMA")
+            return None
         
-        # Extraire la configuration de la réponse
-        if 'data' in response and 'config' in response['data']:
-            return response['data']['config']
-        
-        # Si la réponse ne contient pas de configuration, retourner un dictionnaire vide
-        return {}
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération de la configuration: {str(e)}")
+            return None
     
     def _convert_metrics_format(self, metrics: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -542,26 +634,33 @@ class ApiClient:
         Returns:
             Dict[str, Any]: Réponse du serveur
         """
-        endpoint = ApiRoutes.METRICS_BATCH
+        endpoint = ApiRoutes.METRICS_GLOBAL
         
-        # Formater chaque entrée du lot
+        # Formater chaque entrée du lot pour l'API global
         formatted_batch = {
             'agent_uuid': self.agent_uuid,
-            'batch_size': batch_data.get('batch_size', 0),
             'timestamp': batch_data.get('timestamp', int(time.time())),
-            'metrics': []
+            'collectors': {}
         }
         
-        # Traiter chaque entrée du lot
+        # Fusionner toutes les métriques par collecteur
         for entry in batch_data.get('metrics_batch', []):
-            # Convertir les métriques au format attendu par l'API
-            formatted_metrics = self._convert_metrics_format(entry.get('data', {}))
+            timestamp = entry.get('timestamp', int(time.time()))
+            metrics_data = entry.get('data', {})
             
-            # Ajouter l'entrée formatée au lot
-            formatted_batch['metrics'].append({
-                'timestamp': entry.get('timestamp', int(time.time())),
-                'metrics': formatted_metrics.get('metrics', [])
-            })
+            # Pour chaque collecteur dans cette entrée
+            for collector_name, collector_data in metrics_data.items():
+                # Si ce collecteur n'existe pas encore dans notre résultat, l'initialiser
+                if collector_name not in formatted_batch['collectors']:
+                    formatted_batch['collectors'][collector_name] = {
+                        'entries': []
+                    }
+                
+                # Ajouter cette entrée avec son timestamp
+                formatted_batch['collectors'][collector_name]['entries'].append({
+                    'timestamp': timestamp,
+                    'data': collector_data
+                })
         
         return self._make_request("POST", endpoint, formatted_batch)
     

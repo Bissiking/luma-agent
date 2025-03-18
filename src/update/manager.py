@@ -10,42 +10,66 @@ import sys
 import time
 import logging
 import requests
+import tempfile
+import shutil
+import subprocess
+import zipfile
+import platform
+import json
 from typing import Dict, Any, Optional, Tuple
 
 from src.api.routes import ApiRoutes
+from src.constants import VERSION, AGENT_INFO
 
 logger = logging.getLogger(__name__)
 
 
 class Updater:
     """
-    Gère les mises à jour automatiques de l'agent
+    Gestionnaire de mises à jour automatiques de l'agent LUMA
+    
+    Cette classe gère la vérification et l'application des mises à jour
+    de l'agent. Elle utilise l'API LUMA pour vérifier si une nouvelle
+    version est disponible et télécharge la mise à jour si nécessaire.
     """
     
-    def __init__(self, enabled=False, interval=86400, update_url=None, current_version=None, agent_uuid=None):
+    def __init__(self, agent_uuid: str, api_client, config: Dict[str, Any], logger=None):
         """
-        Initialise le gestionnaire de mises à jour
+        Initialise le gestionnaire de mises à jour.
         
         Args:
-            enabled: Si les mises à jour automatiques sont activées
-            interval: Intervalle entre les vérifications de mises à jour (en secondes)
-            update_url: URL pour vérifier les mises à jour
-            current_version: Version actuelle de l'agent
             agent_uuid: UUID de l'agent
+            api_client: Client API pour communiquer avec le serveur LUMA
+            config: Configuration de l'agent
+            logger: Logger à utiliser (optionnel)
         """
-        self.enabled = enabled
-        self.interval = interval
-        self.update_url = update_url
-        self.current_version = current_version or "P-2.0.0-Grizzly"
         self.agent_uuid = agent_uuid
-        self.last_check = 0
+        self.api_client = api_client
+        self.config = config
+        self.logger = logger or logging.getLogger(__name__)
         
-        if self.enabled:
-            logger.info(f"Gestionnaire de mises à jour initialisé (version actuelle: {self.current_version})")
-            logger.info(f"URL de mise à jour: {self.update_url}")
-            logger.info(f"Intervalle de vérification: {self.interval}s")
+        # Configuration des mises à jour
+        self.update_config = config.get('agent', {}).get('auto_update', {})
+        self.enabled = self.update_config.get('enabled', False)
+        self.interval = self.update_config.get('interval', 86400)  # 24 heures par défaut
+        self.update_url = self.update_config.get('update_url', '')
+        
+        # Informations sur l'agent
+        self.current_version = VERSION
+        self.platform = platform.system().lower()
+        self.architecture = platform.machine().lower()
+        self.python_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+        
+        # Chemin de base de l'agent
+        self.base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+        
+        self.logger.info(f"Gestionnaire de mises à jour initialisé (version actuelle: {self.current_version})")
+        self.logger.debug(f"Plateforme: {self.platform}, Architecture: {self.architecture}, Python: {self.python_version}")
+        
+        if not self.enabled:
+            self.logger.info("Les mises à jour automatiques sont désactivées")
         else:
-            logger.info("Mises à jour automatiques désactivées")
+            self.logger.info(f"Vérification des mises à jour toutes les {self.interval/3600:.1f} heures")
     
     def check_for_updates(self) -> bool:
         """
@@ -83,8 +107,9 @@ class Updater:
             data = {
                 "agent_uuid": self.agent_uuid,
                 "current_version": self.current_version,
-                "platform": sys.platform,
-                "python_version": sys.version.split()[0]
+                "platform": self.platform,
+                "architecture": self.architecture,
+                "python_version": self.python_version
             }
             
             # Faire la requête

@@ -24,6 +24,7 @@ from src.collectors.disk_collector import DiskCollector
 from src.collectors.network_collector import NetworkCollector
 from src.collectors.docker_collector import DockerCollector
 from src.collectors.web_service_collector import WebServiceCollector
+from src.collectors.service_collector import ServiceCollector
 
 # Importation des autres composants
 from src.collectors import CollectorManager
@@ -34,6 +35,9 @@ from src.utils.logger import setup_logging, get_logger
 from src.utils.system_info import is_running_in_docker, get_system_details
 from src.utils.metrics_buffer import MetricsBuffer
 from src.update.manager import Updater
+
+# Importation des constantes
+from src.constants import VERSION, DEFAULT_CONFIG
 
 
 class MonitoringAgent:
@@ -159,7 +163,7 @@ class MonitoringAgent:
         
         # Logger de l'agent
         self.logger = logging.getLogger(__name__)
-        self.version = "P-2.0.0-Grizzly"
+        self.version = VERSION
         self.logger.info(f"Initialisation de l'agent {self.version}")
         
         # Afficher des informations sur la configuration
@@ -196,7 +200,8 @@ class MonitoringAgent:
             'disk': DiskCollector,
             'network': NetworkCollector,
             'docker': DockerCollector,
-            'web_service': WebServiceCollector
+            'web_service': WebServiceCollector,
+            'service': ServiceCollector
         }
         
         collectors_config = self.config.get('collectors', {})
@@ -284,11 +289,10 @@ class MonitoringAgent:
         try:
             self.logger.info(f"Envoi d'un lot de {len(metrics_batch)} métriques au serveur central...")
             
-            # Préparation du lot pour l'API
+            # Préparation du lot pour l'API global
             batch_data = {
                 'metrics_batch': metrics_batch,
                 'agent_uuid': self.config['api']['uuid'],
-                'batch_size': len(metrics_batch),
                 'timestamp': int(time.time())
             }
             
@@ -626,248 +630,135 @@ class MonitoringAgent:
 
     def _load_config(self) -> Dict[str, Any]:
         """
-        Charge la configuration de l'agent
+        Charge la configuration de l'agent.
+        
+        La priorité est:
+        1. Configuration depuis LUMA (obligatoire)
+        2. Paramètres de la ligne de commande (pour l'API uniquement)
+        3. Fichier de configuration local (uniquement pour l'API)
+        
+        Si la configuration LUMA n'est pas disponible, l'agent s'arrête.
         
         Returns:
             Dict[str, Any]: Configuration de l'agent
         """
         # Récupérer les arguments CLI
-        import sys
-        cli_args = sys.argv[1:]
         args = parse_args()
         
-        # Initialiser une configuration de base
-        default_config = {
-            'agent': {
-                'version': "P-2.0.0-Grizzly", 
-                'remote_config': True,
-                'log_level': 'info',
-                'log_file': 'logs/agent.log',
-                'interval': 60,
-                'auto_update': {
-                    'enabled': False,
-                    'interval': 86400,  # 24h
-                    'update_url': ''
-                }
-            },
-            'metrics_buffer': {
-                'enabled': True,
-                'file_path': 'data/metrics_buffer.json',
-                'max_size': 1000,
-                'retention_period': 86400,  # 24h
-                'flush_interval': 300,  # 5min
-                'batch_size': 50
-            },
+        # Configuration minimale pour l'API uniquement
+        local_config = {
             'api': {
                 'base_url': '',
                 'uuid': '',
                 'token': '',
                 'timeout': 30
-            },
-            'collectors': {
-                'cpu': {'enabled': True},
-                'memory': {'enabled': True},
-                'disk': {'enabled': True},
-                'network': {'enabled': True},
-                'docker': {'enabled': True},
-                'web_service': {'enabled': False, 'services': []}
-            },
-            'alerts': {
-                'high_cpu': {'enabled': True, 'threshold': 80, 'duration': 300},
-                'high_memory': {'enabled': True, 'threshold': 85, 'duration': 300},
-                'high_disk': {'enabled': True, 'threshold': 90, 'duration': 600, 'partitions': ['*']}
             }
         }
         
-        # Configuration locale (peut être mise à jour)
-        local_config = dict(default_config)
-        
-        # Vérifier si le fichier de configuration existe
+        # Charger la configuration locale (fichier) si elle existe
         config_path = os.path.abspath(self.config_file)
-        config_from_file = False
-        
         if os.path.exists(config_path):
             try:
                 with open(config_path, 'r') as f:
                     file_config = yaml.safe_load(f)
-                    if file_config:
-                        print(f"Configuration chargée depuis {config_path}")
-                        local_config.update(file_config)
-                        config_from_file = True
+                    if file_config and 'api' in file_config:
+                        print(f"Configuration API chargée depuis {config_path}")
+                        local_config['api'].update(file_config['api'])
             except Exception as e:
                 print(f"Erreur lors du chargement de la configuration depuis {config_path}: {e}")
-                if not any([args.api_url, args.api_uuid, args.api_token]):
-                    # Si les arguments de ligne de commande ne sont pas disponibles
-                    # et qu'il y a une erreur de chargement du fichier, on renvoie une erreur
-                    raise
-        elif not any([args.api_url, args.api_uuid, args.api_token]):
-            # Si aucun fichier n'existe et qu'aucun paramètre d'API n'est fourni,
-            # créer une configuration par défaut et l'écrire dans le fichier
-            try:
-                # Essayer de récupérer l'UUID de la machine
-                import uuid
-                import platform
-                # Générer un UUID unique basé sur l'adresse MAC
-                machine_uuid = str(uuid.uuid1())
-                # Générer un token simple
-                token = str(uuid.uuid4())
-                
-                print(f"Aucun fichier de configuration trouvé. Création d'une configuration par défaut dans {config_path}")
-                print(f"UUID généré: {machine_uuid}")
-                print(f"Token généré: {token}")
-                
-                # Mise à jour des valeurs par défaut
-                default_config['api']['uuid'] = machine_uuid
-                default_config['api']['token'] = token
-                default_config['api']['base_url'] = "https://votre-domaine.com/api/v1/monitoring"
-                
-                # S'assurer que le répertoire existe
-                os.makedirs(os.path.dirname(os.path.abspath(config_path)), exist_ok=True)
-                
-                # Écrire la configuration par défaut
-                with open(config_path, 'w') as f:
-                    yaml.dump(default_config, f, default_flow_style=False)
-                
-                print(f"Configuration par défaut créée. Veuillez modifier {config_path} pour configurer l'URL de l'API et d'autres paramètres.")
-                local_config = default_config
-            except Exception as e:
-                print(f"Erreur lors de la création de la configuration par défaut: {e}")
-                # Même si la création échoue, on continue avec la configuration en mémoire
-                local_config = default_config
         
-        # Appliquer les configurations depuis les arguments CLI
+        # Appliquer les configurations depuis les arguments CLI (priorité sur le fichier)
         if args.api_url:
-            if 'api' not in local_config:
-                local_config['api'] = {}
             local_config['api']['base_url'] = args.api_url
-            
         if args.api_uuid:
-            if 'api' not in local_config:
-                local_config['api'] = {}
             local_config['api']['uuid'] = args.api_uuid
-            
         if args.api_token:
-            if 'api' not in local_config:
-                local_config['api'] = {}
             local_config['api']['token'] = args.api_token
-            
-        if args.log_level:
-            if 'agent' not in local_config:
-                local_config['agent'] = {}
-            local_config['agent']['log_level'] = args.log_level
-            
-        if args.log_file:
-            if 'agent' not in local_config:
-                local_config['agent'] = {}
-            local_config['agent']['log_file'] = args.log_file
-            
-        if args.interval:
-            if 'agent' not in local_config:
-                local_config['agent'] = {}
-            local_config['agent']['interval'] = args.interval
-            
-        if args.remote_config is not None:
-            if 'agent' not in local_config:
-                local_config['agent'] = {}
-            local_config['agent']['remote_config'] = args.remote_config
-            
-        # Vérifier les informations essentielles
-        if not local_config.get('api', {}).get('base_url'):
+        
+        # Vérifier les informations essentielles de l'API
+        if not local_config['api']['base_url']:
             print("ERREUR: URL de l'API non configurée")
             print("Veuillez configurer l'URL de l'API dans le fichier de configuration ou via --api-url")
-            raise ValueError("URL de l'API non configurée")
-            
-        if not local_config.get('api', {}).get('uuid'):
+            sys.exit(1)
+        
+        if not local_config['api']['uuid']:
             print("ERREUR: UUID de l'agent non configuré")
             print("Veuillez configurer l'UUID dans le fichier de configuration ou via --api-uuid")
-            raise ValueError("UUID de l'agent non configuré")
-            
-        if not local_config.get('api', {}).get('token'):
+            sys.exit(1)
+        
+        if not local_config['api']['token']:
             print("ERREUR: Token d'API non configuré")
             print("Veuillez configurer le token dans le fichier de configuration ou via --api-token")
-            raise ValueError("Token d'API non configuré")
-
+            sys.exit(1)
+        
         # Initialiser l'API client avec les informations de base
         self.api_client = ApiClient(
             base_url=local_config['api']['base_url'],
             agent_uuid=local_config['api']['uuid'],
             agent_token=local_config['api']['token'],
             timeout=local_config['api'].get('timeout', 30),
-            agent_version="P-2.0.0-Grizzly"  # Version par défaut, sera mise à jour plus tard
+            agent_version=VERSION
         )
         
-        # Charger la configuration sauvegardée précédemment si elle existe
-        saved_config_path = os.path.join(os.path.dirname(config_path), "luma_config.yaml")
-        saved_config = None
-        if os.path.exists(saved_config_path):
+        # Récupérer la configuration depuis LUMA (OBLIGATOIRE)
+        try:
+            print("Récupération de la configuration depuis LUMA...")
+            remote_config = self.api_client.get_configuration()
+            
+            if not remote_config:
+                print("ERREUR: Aucune configuration récupérée depuis LUMA")
+                print("L'agent nécessite une configuration distante pour fonctionner.")
+                sys.exit(1)
+            
+            print("Configuration récupérée avec succès depuis LUMA")
+            
+            # Sauvegarder la configuration récupérée
+            saved_config_path = os.path.join(os.path.dirname(config_path), "luma_config.yaml")
             try:
-                with open(saved_config_path, 'r') as f:
-                    saved_config = yaml.safe_load(f)
-                    print(f"Configuration LUMA précédente chargée depuis {saved_config_path}")
+                os.makedirs(os.path.dirname(saved_config_path), exist_ok=True)
+                with open(saved_config_path, 'w') as f:
+                    yaml.dump(remote_config, f, default_flow_style=False)
+                    print(f"Configuration LUMA sauvegardée dans {saved_config_path}")
             except Exception as e:
-                print(f"Erreur lors du chargement de la configuration LUMA précédente: {e}")
-        
-        # Récupérer la configuration depuis LUMA si demandé
-        remote_config = None
-        if local_config.get('agent', {}).get('remote_config', True):
-            try:
-                print("Tentative de récupération de la configuration depuis LUMA...")
-                remote_config = self.api_client.get_configuration()
-                
-                if remote_config:
-                    print("Configuration récupérée avec succès depuis LUMA")
-                    
-                    # Sauvegarder la configuration récupérée
-                    try:
-                        # Créer le répertoire parent si nécessaire
-                        os.makedirs(os.path.dirname(saved_config_path), exist_ok=True)
-                        with open(saved_config_path, 'w') as f:
-                            yaml.dump(remote_config, f, default_flow_style=False)
-                            print(f"Configuration LUMA sauvegardée dans {saved_config_path}")
-                    except Exception as e:
-                        print(f"Erreur lors de la sauvegarde de la configuration LUMA: {e}")
-                else:
-                    print("Aucune configuration récupérée depuis LUMA")
-            except Exception as e:
-                print(f"Erreur lors de la récupération de la configuration depuis LUMA: {e}")
-        
-        # Priorité: config LUMA > config sauvegardée > config locale
-        final_config = {}
-        
-        # Partir de la config locale (niveau de base)
-        final_config.update(local_config)
-        
-        # Ajouter la config sauvegardée si disponible
-        if saved_config:
-            self._update_nested_dict(final_config, saved_config)
-        
-        # Ajouter la config distante si disponible (priorité la plus haute)
-        if remote_config:
-            self._update_nested_dict(final_config, remote_config)
-        
-        # S'assurer que les valeurs essentielles restent intactes
-        if 'api' not in final_config:
-            final_config['api'] = {}
-        final_config['api']['base_url'] = local_config['api']['base_url']
-        final_config['api']['uuid'] = local_config['api']['uuid']
-        final_config['api']['token'] = local_config['api']['token']
-        
-        print("Configuration finale chargée avec succès")
-        return final_config
-    
-    def _update_nested_dict(self, original: Dict[str, Any], update: Dict[str, Any]) -> None:
-        """
-        Met à jour un dictionnaire imbriqué de manière récursive
-        
-        Args:
-            original: Dictionnaire original à mettre à jour
-            update: Dictionnaire contenant les mises à jour
-        """
-        for key, value in update.items():
-            if key in original and isinstance(original[key], dict) and isinstance(value, dict):
-                self._update_nested_dict(original[key], value)
-            else:
-                original[key] = value
+                print(f"Erreur lors de la sauvegarde de la configuration LUMA: {e}")
+            
+            # Configuration finale = configuration LUMA + paramètres API locaux
+            final_config = remote_config.copy()
+            
+            # S'assurer que les valeurs API locales sont préservées
+            if 'api' not in final_config:
+                final_config['api'] = {}
+            final_config['api']['base_url'] = local_config['api']['base_url']
+            final_config['api']['uuid'] = local_config['api']['uuid']
+            final_config['api']['token'] = local_config['api']['token']
+            
+            # Appliquer certains paramètres de ligne de commande si présents
+            if args.log_level:
+                if 'agent' not in final_config:
+                    final_config['agent'] = {}
+                final_config['agent']['log_level'] = args.log_level
+            
+            if args.log_file:
+                if 'agent' not in final_config:
+                    final_config['agent'] = {}
+                final_config['agent']['log_file'] = args.log_file
+            
+            if args.interval:
+                if 'agent' not in final_config:
+                    final_config['agent'] = {}
+                final_config['agent']['interval'] = args.interval
+            
+            # S'assurer que la version est correcte
+            if 'agent' in final_config:
+                final_config['agent']['version'] = VERSION
+            
+            print("Configuration finale préparée avec succès")
+            return final_config
+            
+        except Exception as e:
+            print(f"ERREUR lors de la récupération de la configuration depuis LUMA: {e}")
+            print("L'agent nécessite une configuration distante pour fonctionner.")
+            sys.exit(1)
 
     def _setup_update_manager(self):
         """

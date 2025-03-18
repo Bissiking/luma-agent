@@ -8,28 +8,56 @@ Centralise toutes les URL d'API utilisées par l'agent
 
 class ApiRoutes:
     """
-    Classe contenant toutes les routes d'API pour l'agent de monitoring
-    Les routes sont relatives et seront jointes à l'URL de base
+    Centralisation des routes API utilisées par l'agent LUMA.
+    
+    Cette classe contient toutes les routes API nécessaires pour communiquer avec
+    le serveur LUMA. Les routes utilisent des placeholders {uuid} et {id} qui sont
+    remplacés par les valeurs réelles lors de l'appel.
     """
     
+    # Routes basiques
+    ROOT = ""
+    BASE = "agent"
+    
+    # Routes pour l'agent
+    AGENT = "api/agent/{uuid}"
+    CHECKIN = "api/agent/{uuid}/checkin"
+    CONFIG = "api/agent/{uuid}/configuration"
+    
     # Routes pour les métriques
-    METRICS = "agent/{uuid}/metrics"
-    METRICS_GLOBAL = "agent/{uuid}/metrics/global"
-    
-    # Routes pour la configuration
-    CONFIGURATION = "agent/{uuid}/configuration"
-    CONFIGURATION_BY_ID = "monitoring/agent/{id}/configuration"
-    
-    # Routes pour les check-ins et la santé
-    CHECKIN = "agent/{uuid}/checkin"
-    HEALTH = "agent/{uuid}/health"
+    METRICS = "api/agent/{uuid}/metrics"
+    METRICS_GLOBAL = "api/agent/{uuid}/metrics/global"
     
     # Routes pour les alertes
     ALERTS = "agent/{uuid}/alerts"
+    ALERTS_STATUS = "agent/{uuid}/alerts/status"
     
     # Routes pour les mises à jour
-    UPDATES = "agent/updates"
+    UPDATES = "api/agent/{uuid}/updates"
+    UPDATE_STATUS = "api/agent/{uuid}/updates/status"
+    UPDATE_DOWNLOAD = "api/agent/{uuid}/updates/download"
     
+    # Routes pour les commandes
+    COMMANDS = "api/agent/{uuid}/commands"
+    COMMAND_STATUS = "api/agent/{uuid}/commands/{id}/status"
+    COMMAND_RESULT = "api/agent/{uuid}/commands/{id}/result"
+    
+    # Routes pour les fichiers
+    FILES = "api/agent/{uuid}/files"
+    FILE_DOWNLOAD = "api/agent/{uuid}/files/{id}/download"
+    FILE_UPLOAD = "api/agent/{uuid}/files/upload"
+    
+    @staticmethod
+    def get_all_routes() -> dict:
+        """
+        Retourne toutes les routes disponibles pour documentation.
+        
+        Returns:
+            dict: Dictionnaire des routes disponibles
+        """
+        return {name: value for name, value in vars(ApiRoutes).items() 
+                if not name.startswith('_') and isinstance(value, str)}
+
     @staticmethod
     def get_full_route(base_url: str, route: str, **params) -> str:
         """

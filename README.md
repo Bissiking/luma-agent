@@ -74,7 +74,7 @@ agent:
 
 # Configuration de l'API (OBLIGATOIRE)
 api:
-  base_url: "https://dev.mhemery.fr/api/monitoring"  # URL de base de l'API
+  base_url: "https://mhemery.fr/api"  # URL de base de l'API
   uuid: "votre-uuid-unique"    # UUID unique de l'agent 
   token: "votre-token-secret"  # Token d'authentification (Bearer Token)
   timeout: 30                  # Timeout en secondes
@@ -97,7 +97,7 @@ Vous pouvez aussi utiliser une configuration complète si vous préférez gérer
 
 1. Copiez le fichier de configuration exemple :
    ```bash
-   cp config.yaml config.local.yaml
+   cp config-exemple.yaml config.yaml
    ```
 
 2. Modifiez le fichier `config.local.yaml` avec vos paramètres :
