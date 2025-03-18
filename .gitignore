@@ -1,0 +1,64 @@
+# Ignorer les fichiers de configuration avec des informations sensibles
+config.yaml
+luma_config.yaml
+*.config.yaml
+config-*.yaml
+!config.minimal.yaml
+!config-test.yaml
+!config-example.yaml
+
+# Ignorer les fichiers de logs
+logs/
+*.log
+
+# Ignorer les fichiers temporaires ou générés par les tests
+*.tmp
+*.json
+metrics_*.json
+test_output/
+
+# Ignorer les fichiers Python compilés
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Ignorer les environnements virtuels
+venv/
+ENV/
+.env
+
+# Ignorer les fichiers IDE
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+.spyderproject
+.spyproject
+.ropeproject
+
+# Ignorer les fichiers système
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.AppleDouble
+.LSOverride
+._* 
