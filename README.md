@@ -1,8 +1,8 @@
-# P-2.0.0-Grizzly - Agent de Monitoring Système
+# P-2.*-Grizzly - Agent de Monitoring Système
 
 ## Description
 
-P-2.0.0-Grizzly est un agent de monitoring système léger et modulaire, développé en Python. Il collecte des métriques système (CPU, mémoire, disque, réseau, etc.) et les envoie à un serveur central via une API REST.
+P-2.*-Grizzly est un agent de monitoring système léger et modulaire, développé en Python. Il collecte des métriques système (CPU, mémoire, disque, réseau, etc.) et les envoie à un serveur central via une API REST.
 
 L'agent est conçu avec une architecture flexible qui permet d'ajouter facilement de nouveaux collecteurs de métriques.
 
