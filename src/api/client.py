@@ -84,7 +84,8 @@ class ApiClient:
             }
             
             if data is not None:
-                kwargs['json'] = data
+                # Sérialiser les données en JSON et les envoyer dans le corps de la requête
+                kwargs['data'] = json.dumps(data)
             
             if params is not None:
                 kwargs['params'] = params
@@ -264,45 +265,141 @@ class ApiClient:
     
     def checkin(self) -> Dict[str, Any]:
         """
-        Enregistrement périodique de l'agent auprès du serveur LUMA
+        Signale l'activité de l'agent au serveur et récupère la configuration.
         
-        Retourne les informations sur l'agent, y compris la configuration et
-        les instructions du serveur.
+        Cette méthode est appelée régulièrement pour:
+        1. Signaler que l'agent est en vie
+        2. Obtenir les éventuelles modifications de configuration
+        
+        Endpoint: /api/v1/agents/:uuid/checkin
+        Méthode: POST
+        
+        Format de réponse attendu:
+        {
+          "success": true,
+          "data": {
+            "config": {
+              "interval": 60,
+              "log_level": "INFO",
+              "cpu_collector_enabled": true,
+              "memory_collector_enabled": true,
+              "disk_collector_enabled": true,
+              "network_collector_enabled": true,
+              "docker_collector_enabled": false,
+              "web_service_collector_enabled": false,
+              "alerts_enabled": true,
+              "notification_email": null,
+              "notification_discord_webhook": null,
+              "notification_slack_webhook": null,
+              "windows_services": null,
+              "linux_services": null,
+              "docker_containers": null
+            },
+            "next_check_in": 60
+          }
+        }
         
         Returns:
-            Dict[str, Any]: Réponse du serveur
+            Dict[str, Any]: Configuration mise à jour ou None en cas d'erreur
         """
         try:
-            endpoint = ApiRoutes.CHECKIN
+            logger.info("Check-in auprès du serveur LUMA...")
             
-            # Préparer les données pour l'enregistrement
-            checkin_data = {
-                "timestamp": int(time.time()),
-                "status": "active",
-                "agent_info": {
-                    "version": VERSION,  # Utilise la version depuis constants.py
-                    "hostname": self._get_hostname(),
-                    "platform": self._get_platform_info(),
-                    "collectors": self._get_collector_status()
-                }
+            # Collecter des informations système pour le check-in
+            system_info = self._get_system_info()
+            hostname = self._get_hostname()
+            ip_address = self._get_ip_address()
+            
+            # Données à envoyer lors du check-in
+            data = {
+                'hostname': hostname,
+                'ip_address': ip_address,
+                'version': self.agent_version,
+                'system_info': system_info
             }
             
-            response = self._make_request(
-                "POST",
-                endpoint,
-                data=checkin_data
-            )
+            # Faire la requête check-in
+            endpoint = ApiRoutes.CHECKIN
+            response = self._make_request("POST", endpoint, data=data)
             
-            # Traiter la réponse
-            if response:
-                logger.debug("Enregistrement réussi auprès du serveur LUMA")
-                return response
-            else:
-                logger.warning("Aucune réponse reçue pour l'enregistrement")
-                return {}
+            if not response or not response.get('success', False):
+                logger.error("Check-in échoué: réponse invalide du serveur")
+                return None
+            
+            # Extraire la configuration de la réponse
+            response_data = response.get('data', {})
+            config = response_data.get('config', {})
+            next_check_in = response_data.get('next_check_in', 60)
+            
+            # Convertir la configuration au format interne
+            internal_config = self._convert_checkin_config(config)
+            
+            logger.info(f"Check-in réussi. Prochain check-in dans {next_check_in} secondes")
+            return {
+                'config': internal_config,
+                'next_check_in': next_check_in
+            }
+            
         except Exception as e:
-            logger.error(f"Erreur lors de l'enregistrement: {str(e)}")
-            return {"error": str(e)}
+            logger.error(f"Erreur lors du check-in: {e}")
+            return None
+    
+    def _convert_checkin_config(self, api_config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Convertit la configuration du format API vers le format interne.
+        
+        Args:
+            api_config: Configuration au format API
+            
+        Returns:
+            Dict[str, Any]: Configuration au format interne
+        """
+        # Créer une configuration interne de base
+        internal_config = {
+            'agent': {
+                'version': self.agent_version,
+                'interval': api_config.get('interval', 60),
+                'log_level': api_config.get('log_level', 'INFO').lower(),
+            },
+            'collectors': {
+                'cpu': {'enabled': api_config.get('cpu_collector_enabled', True)},
+                'memory': {'enabled': api_config.get('memory_collector_enabled', True)},
+                'disk': {'enabled': api_config.get('disk_collector_enabled', True)},
+                'network': {'enabled': api_config.get('network_collector_enabled', True)},
+                'docker': {'enabled': api_config.get('docker_collector_enabled', False)},
+                'web_service': {'enabled': api_config.get('web_service_collector_enabled', False)},
+            },
+            'alerts': {
+                'enabled': api_config.get('alerts_enabled', True),
+            },
+            'notifications': {
+                'email': api_config.get('notification_email'),
+                'discord_webhook': api_config.get('notification_discord_webhook'),
+                'slack_webhook': api_config.get('notification_slack_webhook'),
+            }
+        }
+        
+        # Ajouter les services spécifiques à Windows/Linux si présents
+        windows_services = api_config.get('windows_services')
+        if windows_services:
+            if 'service' not in internal_config['collectors']:
+                internal_config['collectors']['service'] = {}
+            internal_config['collectors']['service']['windows_services'] = windows_services
+        
+        linux_services = api_config.get('linux_services')
+        if linux_services:
+            if 'service' not in internal_config['collectors']:
+                internal_config['collectors']['service'] = {}
+            internal_config['collectors']['service']['linux_services'] = linux_services
+        
+        # Ajouter les conteneurs Docker spécifiques si présents
+        docker_containers = api_config.get('docker_containers')
+        if docker_containers:
+            if 'docker' not in internal_config['collectors']:
+                internal_config['collectors']['docker'] = {'enabled': True}
+            internal_config['collectors']['docker']['containers'] = docker_containers
+        
+        return internal_config
     
     def get_configuration(self) -> Dict[str, Any]:
         """
@@ -362,7 +459,7 @@ class ApiClient:
             logger.error(f"Erreur lors de la récupération de la configuration: {str(e)}")
             return None
     
-    def _convert_metrics_format(self, metrics: Dict[str, Any]) -> Dict[str, Any]:
+    def _convert_metrics_format(self, metrics: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
         Convertit les métriques du format interne au format attendu par l'API
         
@@ -370,207 +467,362 @@ class ApiClient:
             metrics: Dictionnaire contenant les métriques collectées
             
         Returns:
-            Dict[str, Any]: Métriques au format attendu par l'API
+            List[Dict[str, Any]]: Liste de métriques au format attendu par l'API
         """
-        # Nouveau format pour les métriques conforme à la demande
-        result = {
-            'metrics': []
-        }
+        formatted_metrics = []
         
-        # Convertir les métriques CPU
-        if 'cpu_collector' in metrics:
-            cpu_metrics = metrics['cpu_collector']
-            
-            # Utilisation CPU
-            if 'percent' in cpu_metrics:
-                result['metrics'].append({
-                    'name': 'cpu_usage',
-                    'value': cpu_metrics['percent'],
-                    'unit': '%'
-                })
-            
-            # Load averages si disponibles (Linux uniquement)
-            if 'stats' in cpu_metrics and 'loadavg_1min' in cpu_metrics['stats']:
-                result['metrics'].append({
-                    'name': 'load_average_1m',
-                    'value': cpu_metrics['stats']['loadavg_1min'],
-                    'unit': ''
-                })
-                result['metrics'].append({
-                    'name': 'load_average_5m',
-                    'value': cpu_metrics['stats']['loadavg_5min'],
-                    'unit': ''
-                })
-                result['metrics'].append({
-                    'name': 'load_average_15m',
-                    'value': cpu_metrics['stats']['loadavg_15min'],
-                    'unit': ''
-                })
-            
-        # Convertir les métriques mémoire
-        if 'memory_collector' in metrics and 'virtual' in metrics['memory_collector']:
-            mem_metrics = metrics['memory_collector']['virtual']
-            
-            result['metrics'].append({
-                'name': 'memory_total',
-                'value': mem_metrics.get('total', 0) / (1024 * 1024),  # Convertir en MB
-                'unit': 'MB'
-            })
-            result['metrics'].append({
-                'name': 'memory_used',
-                'value': mem_metrics.get('used', 0) / (1024 * 1024),  # Convertir en MB
-                'unit': 'MB'
-            })
-            result['metrics'].append({
-                'name': 'memory_free',
-                'value': mem_metrics.get('available', 0) / (1024 * 1024),  # Convertir en MB
-                'unit': 'MB'
-            })
-            result['metrics'].append({
-                'name': 'memory_usage',
-                'value': mem_metrics.get('percent', 0),
-                'unit': '%'
-            })
-            
-        # Convertir les métriques disque
-        if 'disk_collector' in metrics and 'usage' in metrics['disk_collector']:
-            disk_metrics = metrics['disk_collector']['usage']
-            
-            # Pour chaque partition
-            for mount_point, disk_data in disk_metrics.items():
-                prefix = 'disk_' + mount_point.replace('/', '_').strip('_')
-                if not prefix or prefix == 'disk_':
-                    prefix = 'disk_root'
+        # Vérifier si les collecteurs sont actifs dans la configuration
+        config = metrics.get('config', {})
+        collectors_config = config.get('collectors', {})
+        
+        # Convertir les métriques CPU si le collecteur est actif
+        if collectors_config.get('cpu', {}).get('enabled', True):
+            if 'cpu_collector' in metrics:
+                cpu_metrics = metrics['cpu_collector']
                 
-                result['metrics'].append({
-                    'name': f"{prefix}_total",
-                    'value': disk_data.get('total', 0) / (1024 * 1024),  # Convertir en MB
-                    'unit': 'MB'
-                })
-                result['metrics'].append({
-                    'name': f"{prefix}_used",
-                    'value': disk_data.get('used', 0) / (1024 * 1024),  # Convertir en MB
-                    'unit': 'MB'
-                })
-                result['metrics'].append({
-                    'name': f"{prefix}_free",
-                    'value': disk_data.get('free', 0) / (1024 * 1024),  # Convertir en MB
-                    'unit': 'MB'
-                })
-                result['metrics'].append({
-                    'name': f"{prefix}_usage",
-                    'value': disk_data.get('percent', 0),
-                    'unit': '%'
-                })
-                
-        # Convertir les métriques réseau
-        if 'network_collector' in metrics and 'io' in metrics['network_collector']:
-            net_metrics = metrics['network_collector']['io']
-            
-            # Agréger toutes les interfaces
-            total_bytes_sent = 0
-            total_bytes_recv = 0
-            total_packets_sent = 0
-            total_packets_recv = 0
-            
-            for nic, nic_data in net_metrics.items():
-                total_bytes_sent += nic_data.get('bytes_sent', 0)
-                total_bytes_recv += nic_data.get('bytes_recv', 0)
-                total_packets_sent += nic_data.get('packets_sent', 0)
-                total_packets_recv += nic_data.get('packets_recv', 0)
-            
-            result['metrics'].append({
-                'name': 'network_bytes_sent',
-                'value': total_bytes_sent,
-                'unit': 'bytes'
-            })
-            result['metrics'].append({
-                'name': 'network_bytes_recv',
-                'value': total_bytes_recv,
-                'unit': 'bytes'
-            })
-            result['metrics'].append({
-                'name': 'network_packets_sent',
-                'value': total_packets_sent,
-                'unit': 'packets'
-            })
-            result['metrics'].append({
-                'name': 'network_packets_recv',
-                'value': total_packets_recv,
-                'unit': 'packets'
-            })
-            
-            # Ajouter les taux si disponibles
-            if 'rates' in metrics['network_collector']:
-                rates = metrics['network_collector']['rates']
-                for nic, rate_data in rates.items():
-                    result['metrics'].append({
-                        'name': f"network_{nic}_bytes_sent_per_sec",
-                        'value': rate_data.get('bytes_sent_per_sec', 0),
-                        'unit': 'bytes/s'
+                # Utilisation CPU
+                if 'percent' in cpu_metrics:
+                    formatted_metrics.append({
+                        'name': 'cpu_usage',
+                        'value': cpu_metrics['percent'],
+                        'unit': '%',
+                        'service_id': 1,
+                        'tags': {
+                            'type': 'system',
+                            'collector': 'cpu'
+                        }
                     })
-                    result['metrics'].append({
-                        'name': f"network_{nic}_bytes_recv_per_sec",
-                        'value': rate_data.get('bytes_recv_per_sec', 0),
-                        'unit': 'bytes/s'
+                
+                # Load averages si disponibles (Linux uniquement)
+                if 'stats' in cpu_metrics and 'loadavg_1min' in cpu_metrics['stats']:
+                    formatted_metrics.append({
+                        'name': 'load_average_1m',
+                        'value': cpu_metrics['stats']['loadavg_1min'],
+                        'service_id': 1,
+                        'tags': {
+                            'type': 'system',
+                            'collector': 'cpu'
+                        }
+                    })
+                    formatted_metrics.append({
+                        'name': 'load_average_5m',
+                        'value': cpu_metrics['stats']['loadavg_5min'],
+                        'service_id': 1,
+                        'tags': {
+                            'type': 'system',
+                            'collector': 'cpu'
+                        }
+                    })
+                    formatted_metrics.append({
+                        'name': 'load_average_15m',
+                        'value': cpu_metrics['stats']['loadavg_15min'],
+                        'service_id': 1,
+                        'tags': {
+                            'type': 'system',
+                            'collector': 'cpu'
+                        }
                     })
         
-        # Ajouter les métriques des services web si présents
-        if 'web_service_collector' in metrics and 'services' in metrics['web_service_collector']:
-            web_services = metrics['web_service_collector']['services']
-            
-            # Vérifier si web_services est un dictionnaire ou une liste
-            if isinstance(web_services, dict):
-                # Si c'est un dictionnaire, itérer avec .items()
-                for service_name, service_data in web_services.items():
-                    if isinstance(service_data, dict) and 'response' in service_data and 'response_time' in service_data['response']:
-                        result['metrics'].append({
-                            'name': f"web_{service_name.lower().replace(' ', '_')}_response_time",
-                            'value': service_data['response']['response_time'],
-                            'unit': 'ms'
+        # Convertir les métriques mémoire si le collecteur est actif
+        if collectors_config.get('memory', {}).get('enabled', True):
+            if 'memory_collector' in metrics and 'virtual' in metrics['memory_collector']:
+                mem_metrics = metrics['memory_collector']['virtual']
+                
+                formatted_metrics.append({
+                    'name': 'memory_total',
+                    'value': mem_metrics.get('total', 0) / (1024 * 1024),  # Convertir en MB
+                    'unit': 'MB',
+                    'service_id': 1,
+                    'tags': {
+                        'type': 'system',
+                        'collector': 'memory'
+                    }
+                })
+                formatted_metrics.append({
+                    'name': 'memory_used',
+                    'value': mem_metrics.get('used', 0) / (1024 * 1024),  # Convertir en MB
+                    'unit': 'MB',
+                    'service_id': 1,
+                    'tags': {
+                        'type': 'system',
+                        'collector': 'memory'
+                    }
+                })
+                formatted_metrics.append({
+                    'name': 'memory_free',
+                    'value': mem_metrics.get('available', 0) / (1024 * 1024),  # Convertir en MB
+                    'unit': 'MB',
+                    'service_id': 1,
+                    'tags': {
+                        'type': 'system',
+                        'collector': 'memory'
+                    }
+                })
+                formatted_metrics.append({
+                    'name': 'memory_usage',
+                    'value': mem_metrics.get('percent', 0),
+                    'unit': '%',
+                    'service_id': 1,
+                    'tags': {
+                        'type': 'system',
+                        'collector': 'memory'
+                    }
+                })
+        
+        # Convertir les métriques disque si le collecteur est actif
+        if collectors_config.get('disk', {}).get('enabled', True):
+            if 'disk_collector' in metrics and 'usage' in metrics['disk_collector']:
+                disk_metrics = metrics['disk_collector']['usage']
+                
+                # Pour chaque partition
+                for mount_point, disk_data in disk_metrics.items():
+                    # Récupérer le nom du volume
+                    volume_name = disk_data.get('device', mount_point.split('/')[-1] or 'root')
+                    
+                    prefix = 'disk_' + mount_point.replace('/', '_').strip('_')
+                    if not prefix or prefix == 'disk_':
+                        prefix = 'disk_root'
+                    
+                    formatted_metrics.append({
+                        'name': f"{prefix}_total",
+                        'value': disk_data.get('total', 0) / (1024 * 1024),  # Convertir en MB
+                        'unit': 'MB',
+                        'service_id': 1,
+                        'tags': {
+                            'type': 'system',
+                            'collector': 'disk',
+                            'mount_point': mount_point,
+                            'volume_name': volume_name
+                        }
+                    })
+                    formatted_metrics.append({
+                        'name': f"{prefix}_used",
+                        'value': disk_data.get('used', 0) / (1024 * 1024),  # Convertir en MB
+                        'unit': 'MB',
+                        'service_id': 1,
+                        'tags': {
+                            'type': 'system',
+                            'collector': 'disk',
+                            'mount_point': mount_point,
+                            'volume_name': volume_name
+                        }
+                    })
+                    formatted_metrics.append({
+                        'name': f"{prefix}_free",
+                        'value': disk_data.get('free', 0) / (1024 * 1024),  # Convertir en MB
+                        'unit': 'MB',
+                        'service_id': 1,
+                        'tags': {
+                            'type': 'system',
+                            'collector': 'disk',
+                            'mount_point': mount_point,
+                            'volume_name': volume_name
+                        }
+                    })
+                    formatted_metrics.append({
+                        'name': f"{prefix}_usage",
+                        'value': disk_data.get('percent', 0),
+                        'unit': '%',
+                        'service_id': 1,
+                        'tags': {
+                            'type': 'system',
+                            'collector': 'disk',
+                            'mount_point': mount_point,
+                            'volume_name': volume_name
+                        }
+                    })
+        
+        # Convertir les métriques réseau si le collecteur est actif
+        if collectors_config.get('network', {}).get('enabled', True):
+            if 'network_collector' in metrics and 'io' in metrics['network_collector']:
+                net_metrics = metrics['network_collector']['io']
+                
+                # Agréger toutes les interfaces
+                total_bytes_sent = 0
+                total_bytes_recv = 0
+                total_packets_sent = 0
+                total_packets_recv = 0
+                
+                for nic, nic_data in net_metrics.items():
+                    total_bytes_sent += nic_data.get('bytes_sent', 0)
+                    total_bytes_recv += nic_data.get('bytes_recv', 0)
+                    total_packets_sent += nic_data.get('packets_sent', 0)
+                    total_packets_recv += nic_data.get('packets_recv', 0)
+                
+                formatted_metrics.append({
+                    'name': 'network_bytes_sent',
+                    'value': total_bytes_sent,
+                    'unit': 'bytes',
+                    'service_id': 1,
+                    'tags': {
+                        'type': 'system',
+                        'collector': 'network'
+                    }
+                })
+                formatted_metrics.append({
+                    'name': 'network_bytes_recv',
+                    'value': total_bytes_recv,
+                    'unit': 'bytes',
+                    'service_id': 1,
+                    'tags': {
+                        'type': 'system',
+                        'collector': 'network'
+                    }
+                })
+                formatted_metrics.append({
+                    'name': 'network_packets_sent',
+                    'value': total_packets_sent,
+                    'unit': 'packets',
+                    'service_id': 1,
+                    'tags': {
+                        'type': 'system',
+                        'collector': 'network'
+                    }
+                })
+                formatted_metrics.append({
+                    'name': 'network_packets_recv',
+                    'value': total_packets_recv,
+                    'unit': 'packets',
+                    'service_id': 1,
+                    'tags': {
+                        'type': 'system',
+                        'collector': 'network'
+                    }
+                })
+                
+                # Ajouter les taux si disponibles
+                if 'rates' in metrics['network_collector']:
+                    rates = metrics['network_collector']['rates']
+                    for nic, rate_data in rates.items():
+                        formatted_metrics.append({
+                            'name': f"network_{nic}_bytes_sent_per_sec",
+                            'value': rate_data.get('bytes_sent_per_sec', 0),
+                            'unit': 'bytes/s',
+                            'service_id': 1,
+                            'tags': {
+                                'type': 'system',
+                                'collector': 'network',
+                                'interface': nic
+                            }
                         })
-                        
-                        if 'status_code' in service_data['response']:
-                            result['metrics'].append({
-                                'name': f"web_{service_name.lower().replace(' ', '_')}_status_code",
-                                'value': service_data['response']['status_code'],
-                                'unit': ''
-                            })
-            elif isinstance(web_services, list):
-                # Si c'est une liste, itérer directement
-                for service_data in web_services:
-                    if isinstance(service_data, dict):
-                        service_name = service_data.get('name', 'unknown')
-                        if 'response' in service_data and 'response_time' in service_data['response']:
-                            result['metrics'].append({
+                        formatted_metrics.append({
+                            'name': f"network_{nic}_bytes_recv_per_sec",
+                            'value': rate_data.get('bytes_recv_per_sec', 0),
+                            'unit': 'bytes/s',
+                            'service_id': 1,
+                            'tags': {
+                                'type': 'system',
+                                'collector': 'network',
+                                'interface': nic
+                            }
+                        })
+        
+        # Convertir les métriques des services web si le collecteur est actif
+        if collectors_config.get('web_service', {}).get('enabled', True):
+            if 'web_service_collector' in metrics and 'services' in metrics['web_service_collector']:
+                web_services = metrics['web_service_collector']['services']
+                
+                # Vérifier si web_services est un dictionnaire ou une liste
+                if isinstance(web_services, dict):
+                    # Si c'est un dictionnaire, itérer avec .items()
+                    for service_name, service_data in web_services.items():
+                        if isinstance(service_data, dict) and 'response' in service_data and 'response_time' in service_data['response']:
+                            formatted_metrics.append({
                                 'name': f"web_{service_name.lower().replace(' ', '_')}_response_time",
                                 'value': service_data['response']['response_time'],
-                                'unit': 'ms'
+                                'unit': 'ms',
+                                'service_id': 2,
+                                'tags': {
+                                    'type': 'web_service',
+                                    'collector': 'web_service',
+                                    'service': service_name
+                                }
                             })
                             
                             if 'status_code' in service_data['response']:
-                                result['metrics'].append({
+                                formatted_metrics.append({
                                     'name': f"web_{service_name.lower().replace(' ', '_')}_status_code",
                                     'value': service_data['response']['status_code'],
-                                    'unit': ''
+                                    'service_id': 2,
+                                    'tags': {
+                                        'type': 'web_service',
+                                        'collector': 'web_service',
+                                        'service': service_name
+                                    }
                                 })
+                elif isinstance(web_services, list):
+                    # Si c'est une liste, itérer directement
+                    for service_data in web_services:
+                        if isinstance(service_data, dict):
+                            service_name = service_data.get('name', 'unknown')
+                            if 'response' in service_data and 'response_time' in service_data['response']:
+                                formatted_metrics.append({
+                                    'name': f"web_{service_name.lower().replace(' ', '_')}_response_time",
+                                    'value': service_data['response']['response_time'],
+                                    'unit': 'ms',
+                                    'service_id': 2,
+                                    'tags': {
+                                        'type': 'web_service',
+                                        'collector': 'web_service',
+                                        'service': service_name
+                                    }
+                                })
+                                
+                                if 'status_code' in service_data['response']:
+                                    formatted_metrics.append({
+                                        'name': f"web_{service_name.lower().replace(' ', '_')}_status_code",
+                                        'value': service_data['response']['status_code'],
+                                        'service_id': 2,
+                                        'tags': {
+                                            'type': 'web_service',
+                                            'collector': 'web_service',
+                                            'service': service_name
+                                        }
+                                    })
         
-        # Ajouter les métriques Docker si présentes
-        if 'docker_collector' in metrics and 'containers' in metrics['docker_collector']:
-            docker_metrics = metrics['docker_collector']['containers']
-            
-            result['metrics'].append({
-                'name': 'docker_containers_running',
-                'value': docker_metrics.get('running', 0),
-                'unit': ''
-            })
-            result['metrics'].append({
-                'name': 'docker_containers_total',
-                'value': docker_metrics.get('total', 0),
-                'unit': ''
-            })
+        # Convertir les métriques Docker si le collecteur est actif
+        if collectors_config.get('docker', {}).get('enabled', True):
+            if 'docker_collector' in metrics and 'containers' in metrics['docker_collector']:
+                docker_metrics = metrics['docker_collector']['containers']
+                
+                formatted_metrics.append({
+                    'name': 'docker_containers_running',
+                    'value': docker_metrics.get('running', 0),
+                    'service_id': 3,
+                    'tags': {
+                        'type': 'docker',
+                        'collector': 'docker'
+                    }
+                })
+                formatted_metrics.append({
+                    'name': 'docker_containers_total',
+                    'value': docker_metrics.get('total', 0),
+                    'service_id': 3,
+                    'tags': {
+                        'type': 'docker',
+                        'collector': 'docker'
+                    }
+                })
         
-        return result
+        # Ajouter les métriques des services système si le collecteur est actif
+        if collectors_config.get('service', {}).get('enabled', True):
+            if 'service_collector' in metrics and 'services' in metrics['service_collector']:
+                system_services = metrics['service_collector']['services']
+                
+                for service_name, service_data in system_services.items():
+                    formatted_metrics.append({
+                        'name': f"service_{service_name.lower().replace(' ', '_')}_status",
+                        'value': 1 if service_data.get('status') == 'running' else 0,
+                        'service_id': 1,
+                        'tags': {
+                            'type': 'system',
+                            'collector': 'service',
+                            'service': service_name,
+                            'status': service_data.get('status', 'unknown')
+                        }
+                    })
+        
+        return formatted_metrics
     
     def _determine_alert_level(self, alert: Dict[str, Any]) -> str:
         """
@@ -636,33 +888,53 @@ class ApiClient:
         """
         endpoint = ApiRoutes.METRICS_GLOBAL
         
-        # Formater chaque entrée du lot pour l'API global
-        formatted_batch = {
-            'agent_uuid': self.agent_uuid,
-            'timestamp': batch_data.get('timestamp', int(time.time())),
-            'collectors': {}
-        }
+        # Formater les métriques en tableau
+        formatted_metrics = []
         
-        # Fusionner toutes les métriques par collecteur
+        # Pour chaque entrée du lot
         for entry in batch_data.get('metrics_batch', []):
             timestamp = entry.get('timestamp', int(time.time()))
             metrics_data = entry.get('data', {})
             
-            # Pour chaque collecteur dans cette entrée
-            for collector_name, collector_data in metrics_data.items():
-                # Si ce collecteur n'existe pas encore dans notre résultat, l'initialiser
-                if collector_name not in formatted_batch['collectors']:
-                    formatted_batch['collectors'][collector_name] = {
-                        'entries': []
-                    }
+            # Convertir les métriques au format attendu
+            metrics = self._convert_metrics_format(metrics_data)
+            
+            # Grouper les métriques par collecteur
+            collector_metrics = {
+                'cpu': [],
+                'memory': [],
+                'disk': [],
+                'network': [],
+                'web_service': [],
+                'docker': [],
+                'service': []  # Ajout des services
+            }
+            
+            # Ajouter le timestamp et l'agent_uuid à chaque métrique et les grouper
+            for metric in metrics:
+                metric['timestamp'] = timestamp
+                metric['agent_uuid'] = self.agent_uuid
                 
-                # Ajouter cette entrée avec son timestamp
-                formatted_batch['collectors'][collector_name]['entries'].append({
-                    'timestamp': timestamp,
-                    'data': collector_data
-                })
+                # Extraire le collecteur des tags
+                collector = metric['tags'].get('collector', '')
+                if collector in collector_metrics:
+                    collector_metrics[collector].append(metric)
+            
+            # Créer l'objet final avec les métriques groupées
+            formatted_entry = {
+                'agent_uuid': self.agent_uuid,
+                'timestamp': timestamp,
+                'metrics': collector_metrics
+            }
+            
+            formatted_metrics.append(formatted_entry)
         
-        return self._make_request("POST", endpoint, formatted_batch)
+        # Exemple de sortie JSON
+        logger.debug("Envoi des métriques au format JSON:")
+        logger.debug(json.dumps(formatted_metrics, indent=2))
+        
+        # Envoyer directement les métriques groupées
+        return self._make_request("POST", endpoint, formatted_metrics[0]['metrics'] if formatted_metrics else {})
     
     def send_alert(self, alert: Dict[str, Any]) -> Dict[str, Any]:
         """

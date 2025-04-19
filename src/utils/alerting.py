@@ -194,30 +194,52 @@ class AlertManager:
         # Configuration des alertes CPU
         cpu_alerts_config = self.config.get('cpu', {})
         
+        if not cpu_alerts_config.get('enabled', True):
+            return alerts
+            
         # Vérifier l'utilisation CPU élevée
-        high_usage_config = cpu_alerts_config.get('high_usage', {})
-        if high_usage_config:
-            threshold = high_usage_config.get('threshold', 90)
-            duration = high_usage_config.get('duration', 300)
+        warning_threshold = cpu_alerts_config.get('warning', 70)
+        critical_threshold = cpu_alerts_config.get('critical', 90)
+        duration = cpu_alerts_config.get('duration', 300)
+        recovery_threshold = cpu_alerts_config.get('recovery_threshold', 60)
+        
+        # Obtenir l'utilisation CPU actuelle
+        cpu_percent = cpu_metrics.get('percent')
+        
+        if cpu_percent is not None:
+            # Vérifier l'alerte critique
+            alert_id = 'cpu.critical'
+            is_triggered = self._check_threshold(cpu_percent, critical_threshold, 'above')
             
-            # Obtenir l'utilisation CPU actuelle
-            cpu_percent = cpu_metrics.get('percent')
+            should_alert, alert_data = self._update_alert_state(
+                alert_id, cpu_percent, critical_threshold, duration, current_time, is_triggered
+            )
             
-            if cpu_percent is not None:
-                alert_id = 'cpu.high_usage'
-                is_triggered = self._check_threshold(cpu_percent, threshold, 'above')
-                
-                should_alert, alert_data = self._update_alert_state(
-                    alert_id, cpu_percent, threshold, duration, current_time, is_triggered
-                )
-                
-                if should_alert and alert_data:
-                    alert_data.update({
-                        'type': 'cpu',
-                        'name': 'CPU High Usage',
-                        'description': f"L'utilisation CPU ({cpu_percent:.1f}%) dépasse le seuil de {threshold}% pendant plus de {duration/60:.1f} minutes"
-                    })
-                    alerts.append(alert_data)
+            if should_alert and alert_data:
+                alert_data.update({
+                    'type': 'cpu',
+                    'name': 'CPU Critical Usage',
+                    'description': f"L'utilisation CPU ({cpu_percent:.1f}%) dépasse le seuil critique de {critical_threshold}% pendant plus de {duration/60:.1f} minutes",
+                    'level': 'critical'
+                })
+                alerts.append(alert_data)
+            
+            # Vérifier l'alerte warning
+            alert_id = 'cpu.warning'
+            is_triggered = self._check_threshold(cpu_percent, warning_threshold, 'above')
+            
+            should_alert, alert_data = self._update_alert_state(
+                alert_id, cpu_percent, warning_threshold, duration, current_time, is_triggered
+            )
+            
+            if should_alert and alert_data:
+                alert_data.update({
+                    'type': 'cpu',
+                    'name': 'CPU High Usage',
+                    'description': f"L'utilisation CPU ({cpu_percent:.1f}%) dépasse le seuil d'avertissement de {warning_threshold}% pendant plus de {duration/60:.1f} minutes",
+                    'level': 'warning'
+                })
+                alerts.append(alert_data)
         
         return alerts
     
@@ -240,31 +262,53 @@ class AlertManager:
         # Configuration des alertes mémoire
         memory_alerts_config = self.config.get('memory', {})
         
+        if not memory_alerts_config.get('enabled', True):
+            return alerts
+            
         # Vérifier l'utilisation mémoire élevée
-        high_usage_config = memory_alerts_config.get('high_usage', {})
-        if high_usage_config:
-            threshold = high_usage_config.get('threshold', 90)
-            duration = high_usage_config.get('duration', 300)
+        warning_threshold = memory_alerts_config.get('warning', 75)
+        critical_threshold = memory_alerts_config.get('critical', 85)
+        duration = memory_alerts_config.get('duration', 300)
+        recovery_threshold = memory_alerts_config.get('recovery_threshold', 65)
+        
+        # Obtenir l'utilisation mémoire actuelle
+        virtual_memory = memory_metrics.get('virtual', {})
+        mem_percent = virtual_memory.get('percent')
+        
+        if mem_percent is not None:
+            # Vérifier l'alerte critique
+            alert_id = 'memory.critical'
+            is_triggered = self._check_threshold(mem_percent, critical_threshold, 'above')
             
-            # Obtenir l'utilisation mémoire actuelle
-            virtual_memory = memory_metrics.get('virtual', {})
-            mem_percent = virtual_memory.get('percent')
+            should_alert, alert_data = self._update_alert_state(
+                alert_id, mem_percent, critical_threshold, duration, current_time, is_triggered
+            )
             
-            if mem_percent is not None:
-                alert_id = 'memory.high_usage'
-                is_triggered = self._check_threshold(mem_percent, threshold, 'above')
-                
-                should_alert, alert_data = self._update_alert_state(
-                    alert_id, mem_percent, threshold, duration, current_time, is_triggered
-                )
-                
-                if should_alert and alert_data:
-                    alert_data.update({
-                        'type': 'memory',
-                        'name': 'Memory High Usage',
-                        'description': f"L'utilisation mémoire ({mem_percent:.1f}%) dépasse le seuil de {threshold}% pendant plus de {duration/60:.1f} minutes"
-                    })
-                    alerts.append(alert_data)
+            if should_alert and alert_data:
+                alert_data.update({
+                    'type': 'memory',
+                    'name': 'Memory Critical Usage',
+                    'description': f"L'utilisation mémoire ({mem_percent:.1f}%) dépasse le seuil critique de {critical_threshold}% pendant plus de {duration/60:.1f} minutes",
+                    'level': 'critical'
+                })
+                alerts.append(alert_data)
+            
+            # Vérifier l'alerte warning
+            alert_id = 'memory.warning'
+            is_triggered = self._check_threshold(mem_percent, warning_threshold, 'above')
+            
+            should_alert, alert_data = self._update_alert_state(
+                alert_id, mem_percent, warning_threshold, duration, current_time, is_triggered
+            )
+            
+            if should_alert and alert_data:
+                alert_data.update({
+                    'type': 'memory',
+                    'name': 'Memory High Usage',
+                    'description': f"L'utilisation mémoire ({mem_percent:.1f}%) dépasse le seuil d'avertissement de {warning_threshold}% pendant plus de {duration/60:.1f} minutes",
+                    'level': 'warning'
+                })
+                alerts.append(alert_data)
         
         return alerts
     
@@ -287,34 +331,65 @@ class AlertManager:
         # Configuration des alertes disque
         disk_alerts_config = self.config.get('disk', {})
         
-        # Vérifier l'utilisation disque élevée
-        high_usage_config = disk_alerts_config.get('high_usage', {})
-        if high_usage_config:
-            threshold = high_usage_config.get('threshold', 90)
-            duration = high_usage_config.get('duration', 300)
+        if not disk_alerts_config.get('enabled', True):
+            return alerts
             
-            # Vérifier chaque partition
-            disk_usage = disk_metrics.get('usage', {})
-            for mount_point, usage in disk_usage.items():
-                if isinstance(usage, dict) and 'percent' in usage:
-                    usage_percent = usage.get('percent')
+        # Vérifier l'utilisation disque élevée
+        warning_threshold = disk_alerts_config.get('warning', 80)
+        critical_threshold = disk_alerts_config.get('critical', 90)
+        duration = disk_alerts_config.get('duration', 600)
+        recovery_threshold = disk_alerts_config.get('recovery_threshold', 70)
+        partitions = disk_alerts_config.get('partitions', ['*'])
+        
+        # Vérifier chaque partition
+        disk_usage = disk_metrics.get('usage', {})
+        for mount_point, usage in disk_usage.items():
+            # Vérifier si cette partition doit être surveillée
+            should_monitor = False
+            if '*' in partitions:
+                should_monitor = True
+            elif mount_point in partitions:
+                should_monitor = True
+            
+            if should_monitor and isinstance(usage, dict) and 'percent' in usage:
+                usage_percent = usage.get('percent')
+                
+                if usage_percent is not None:
+                    # Vérifier l'alerte critique
+                    alert_id = f"disk.critical.{mount_point.replace('/', '_')}"
+                    is_triggered = self._check_threshold(usage_percent, critical_threshold, 'above')
                     
-                    if usage_percent is not None:
-                        alert_id = f"disk.high_usage.{mount_point.replace('/', '_')}"
-                        is_triggered = self._check_threshold(usage_percent, threshold, 'above')
-                        
-                        should_alert, alert_data = self._update_alert_state(
-                            alert_id, usage_percent, threshold, duration, current_time, is_triggered
-                        )
-                        
-                        if should_alert and alert_data:
-                            alert_data.update({
-                                'type': 'disk',
-                                'name': f"Disk High Usage ({mount_point})",
-                                'description': f"L'utilisation du disque sur {mount_point} ({usage_percent:.1f}%) dépasse le seuil de {threshold}% pendant plus de {duration/60:.1f} minutes",
-                                'mount_point': mount_point
-                            })
-                            alerts.append(alert_data)
+                    should_alert, alert_data = self._update_alert_state(
+                        alert_id, usage_percent, critical_threshold, duration, current_time, is_triggered
+                    )
+                    
+                    if should_alert and alert_data:
+                        alert_data.update({
+                            'type': 'disk',
+                            'name': f"Disk Critical Usage ({mount_point})",
+                            'description': f"L'utilisation du disque sur {mount_point} ({usage_percent:.1f}%) dépasse le seuil critique de {critical_threshold}% pendant plus de {duration/60:.1f} minutes",
+                            'level': 'critical',
+                            'mount_point': mount_point
+                        })
+                        alerts.append(alert_data)
+                    
+                    # Vérifier l'alerte warning
+                    alert_id = f"disk.warning.{mount_point.replace('/', '_')}"
+                    is_triggered = self._check_threshold(usage_percent, warning_threshold, 'above')
+                    
+                    should_alert, alert_data = self._update_alert_state(
+                        alert_id, usage_percent, warning_threshold, duration, current_time, is_triggered
+                    )
+                    
+                    if should_alert and alert_data:
+                        alert_data.update({
+                            'type': 'disk',
+                            'name': f"Disk High Usage ({mount_point})",
+                            'description': f"L'utilisation du disque sur {mount_point} ({usage_percent:.1f}%) dépasse le seuil d'avertissement de {warning_threshold}% pendant plus de {duration/60:.1f} minutes",
+                            'level': 'warning',
+                            'mount_point': mount_point
+                        })
+                        alerts.append(alert_data)
         
         return alerts
     

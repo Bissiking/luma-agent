@@ -86,32 +86,36 @@ DEFAULT_CONFIG = {
         }
     },
     'alerts': {
-        'high_cpu': {
+        'cpu': {
             'enabled': True,
-            'threshold': 80,  # pourcentage
+            'warning': 70,  # pourcentage
+            'critical': 90,  # pourcentage
             'duration': 300,  # 5 minutes
-            'recovery_threshold': 70,
+            'recovery_threshold': 60,  # pourcentage
             'cooldown': 3600  # 1 heure
         },
-        'high_memory': {
+        'memory': {
             'enabled': True,
-            'threshold': 85,  # pourcentage
+            'warning': 75,  # pourcentage
+            'critical': 85,  # pourcentage
             'duration': 300,  # 5 minutes
-            'recovery_threshold': 75,
+            'recovery_threshold': 65,  # pourcentage
             'cooldown': 3600  # 1 heure
         },
-        'high_disk': {
+        'disk': {
             'enabled': True,
-            'threshold': 90,  # pourcentage
+            'warning': 80,  # pourcentage
+            'critical': 90,  # pourcentage
             'duration': 600,  # 10 minutes
             'partitions': ['*'],
-            'recovery_threshold': 80,
+            'recovery_threshold': 70,  # pourcentage
             'cooldown': 7200  # 2 heures
         },
-        'service_unavailable': {
+        'services': {
             'enabled': True,
             'consecutive_failures': 3,
-            'cooldown': 1800  # 30 minutes
+            'cooldown': 1800,  # 30 minutes
+            'services': ["mysql", "apache2", "nginx"]
         }
     }
 }

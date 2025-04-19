@@ -35,6 +35,7 @@ from src.utils.logger import setup_logging, get_logger
 from src.utils.system_info import is_running_in_docker, get_system_details
 from src.utils.metrics_buffer import MetricsBuffer
 from src.update.manager import Updater
+from src.utils.env_loader import load_env_config  # Importer le module de variables d'environnement
 
 # Importation des constantes
 from src.constants import VERSION, DEFAULT_CONFIG
@@ -633,11 +634,11 @@ class MonitoringAgent:
         Charge la configuration de l'agent.
         
         La priorité est:
-        1. Configuration depuis LUMA (obligatoire)
-        2. Paramètres de la ligne de commande (pour l'API uniquement)
-        3. Fichier de configuration local (uniquement pour l'API)
+        1. Variables d'environnement
+        2. Paramètres de la ligne de commande
+        3. Fichier de configuration local
         
-        Si la configuration LUMA n'est pas disponible, l'agent s'arrête.
+        Puis la configuration est récupérée depuis l'API via le check-in.
         
         Returns:
             Dict[str, Any]: Configuration de l'agent
@@ -655,7 +656,13 @@ class MonitoringAgent:
             }
         }
         
-        # Charger la configuration locale (fichier) si elle existe
+        # 1. Charger les variables d'environnement
+        env_config = load_env_config()
+        if env_config and 'api' in env_config:
+            local_config['api'].update(env_config['api'])
+            print("Configuration chargée depuis les variables d'environnement")
+        
+        # 2. Charger la configuration locale (fichier) si elle existe
         config_path = os.path.abspath(self.config_file)
         if os.path.exists(config_path):
             try:
@@ -667,7 +674,7 @@ class MonitoringAgent:
             except Exception as e:
                 print(f"Erreur lors du chargement de la configuration depuis {config_path}: {e}")
         
-        # Appliquer les configurations depuis les arguments CLI (priorité sur le fichier)
+        # 3. Appliquer les configurations depuis les arguments CLI (priorité sur le fichier et les variables d'environnement)
         if args.api_url:
             local_config['api']['base_url'] = args.api_url
         if args.api_uuid:
@@ -678,17 +685,17 @@ class MonitoringAgent:
         # Vérifier les informations essentielles de l'API
         if not local_config['api']['base_url']:
             print("ERREUR: URL de l'API non configurée")
-            print("Veuillez configurer l'URL de l'API dans le fichier de configuration ou via --api-url")
+            print("Veuillez configurer l'URL de l'API via LUMA_API_URL ou dans le fichier de configuration")
             sys.exit(1)
         
         if not local_config['api']['uuid']:
             print("ERREUR: UUID de l'agent non configuré")
-            print("Veuillez configurer l'UUID dans le fichier de configuration ou via --api-uuid")
+            print("Veuillez configurer l'UUID via LUMA_API_UUID ou dans le fichier de configuration")
             sys.exit(1)
         
         if not local_config['api']['token']:
             print("ERREUR: Token d'API non configuré")
-            print("Veuillez configurer le token dans le fichier de configuration ou via --api-token")
+            print("Veuillez configurer le token via LUMA_API_TOKEN ou dans le fichier de configuration")
             sys.exit(1)
         
         # Initialiser l'API client avec les informations de base
@@ -700,10 +707,18 @@ class MonitoringAgent:
             agent_version=VERSION
         )
         
-        # Récupérer la configuration depuis LUMA (OBLIGATOIRE)
+        # Récupérer la configuration depuis LUMA via check-in
         try:
-            print("Récupération de la configuration depuis LUMA...")
-            remote_config = self.api_client.get_configuration()
+            print("Récupération de la configuration via check-in LUMA...")
+            checkin_response = self.api_client.checkin()
+            
+            if not checkin_response:
+                print("ERREUR: Échec du check-in avec LUMA")
+                print("L'agent nécessite une connexion avec le serveur LUMA pour fonctionner.")
+                sys.exit(1)
+            
+            remote_config = checkin_response.get('config', {})
+            next_check_in = checkin_response.get('next_check_in', 60)
             
             if not remote_config:
                 print("ERREUR: Aucune configuration récupérée depuis LUMA")
@@ -751,6 +766,9 @@ class MonitoringAgent:
             # S'assurer que la version est correcte
             if 'agent' in final_config:
                 final_config['agent']['version'] = VERSION
+                
+            # Stocker le prochain check-in
+            self.next_check_in = next_check_in
             
             print("Configuration finale préparée avec succès")
             return final_config

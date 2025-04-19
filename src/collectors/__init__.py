@@ -10,6 +10,7 @@ from .disk_collector import DiskCollector
 from .network_collector import NetworkCollector
 from .docker_collector import DockerCollector
 from .web_service_collector import WebServiceCollector
+from .service_collector import ServiceCollector
 
 __all__ = [
     'BaseCollector',
@@ -19,5 +20,6 @@ __all__ = [
     'DiskCollector',
     'NetworkCollector',
     'DockerCollector',
-    'WebServiceCollector'
+    'WebServiceCollector',
+    'ServiceCollector'
 ] 

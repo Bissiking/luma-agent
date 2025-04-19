@@ -251,4 +251,98 @@ Les journaux sont écrits dans le fichier spécifié dans la configuration (`log
 
 ## Contribuer
 
-Les contributions sont les bienvenues ! N'hésitez pas à soumettre des pull requests ou à ouvrir des issues sur GitHub. 
+Les contributions sont les bienvenues ! N'hésitez pas à soumettre des pull requests ou à ouvrir des issues sur GitHub.
+
+## Configuration de l'agent
+
+L'agent nécessite trois informations essentielles pour fonctionner :
+- **URL de l'API** : URL de base de l'API LUMA
+- **UUID de l'agent** : Identifiant unique de l'agent
+- **Token d'authentification** : Token sécurisé pour l'authentification auprès de l'API
+
+Ces informations peuvent être fournies de plusieurs façons, par ordre de priorité :
+
+### 1. Variables d'environnement (recommandé)
+
+Créez un fichier `.env` à la racine du projet, basé sur le modèle `.env.example` :
+
+```
+# Configuration de l'API LUMA
+LUMA_API_URL=https://dev.api.mhemery.fr/api
+LUMA_API_UUID=votre-uuid-unique
+LUMA_API_TOKEN=votre-token-secret
+```
+
+Vous pouvez également définir ces variables directement dans votre système d'exploitation.
+
+### 2. Arguments en ligne de commande
+
+```bash
+python agent.py --api-url https://dev.api.mhemery.fr/api --api-uuid votre-uuid-unique --api-token votre-token-secret
+```
+
+### 3. Fichier de configuration
+
+Créez un fichier `config.yaml` à la racine du projet :
+
+```yaml
+api:
+  base_url: "https://dev.api.mhemery.fr/api"
+  uuid: "votre-uuid-unique"
+  token: "votre-token-secret"
+```
+
+## Fonctionnement
+
+Au démarrage, l'agent effectue les opérations suivantes :
+
+1. Chargement de la configuration (variables d'environnement, arguments en ligne de commande, fichier config.yaml)
+2. Connexion à l'API LUMA via l'endpoint `/api/v1/agents/:uuid/checkin`
+3. Récupération de la configuration complète depuis le serveur
+4. Configuration des collecteurs et des alertes
+5. Démarrage des collecteurs selon les intervalles spécifiés
+6. Envoi régulier des métriques au serveur
+7. Surveillance des seuils d'alerte
+
+## Alertes et Surveillance
+
+L'agent surveille plusieurs métriques système et peut déclencher des alertes lorsque les seuils sont dépassés.
+
+### Métriques surveillées
+
+- **CPU** : Utilisation du processeur
+- **Mémoire** : Utilisation de la RAM
+- **Disque** : Espace disque disponible
+- **Réseau** : Trafic réseau
+- **Services** : État des services Windows/Linux
+- **Docker** : État des conteneurs Docker
+
+### Seuils d'alerte
+
+Les seuils d'alerte sont configurés automatiquement via la réponse du check-in API. 
+
+## Dépendances
+
+- Python 3.6+
+- psutil
+- requests
+- pyyaml
+- python-dotenv
+
+## Installation
+
+```bash
+# Cloner le dépôt
+git clone https://github.com/votre-repo/luma-agent.git
+cd luma-agent
+
+# Installer les dépendances
+pip install -r requirements.txt
+
+# Créer le fichier .env
+cp .env.example .env
+# Modifier le fichier .env avec vos informations
+
+# Lancer l'agent
+python agent.py
+``` 

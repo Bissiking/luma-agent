@@ -20,32 +20,40 @@ class ApiRoutes:
     BASE = "agent"
     
     # Routes pour l'agent
-    AGENT = "api/agent/{uuid}"
-    CHECKIN = "api/agent/{uuid}/checkin"
-    CONFIG = "api/agent/{uuid}/configuration"
+    AGENT = "/api/v1/agents/{uuid}"
+    CHECKIN = "/api/v1/agents/{uuid}/checkin"
+    CONFIG = "/api/v1/agent/configuration/{uuid}"
+    CONFIG_EXAMPLE = "/api/v1/agents/configuration/example"
     
     # Routes pour les métriques
-    METRICS = "api/agent/{uuid}/metrics"
-    METRICS_GLOBAL = "api/agent/{uuid}/metrics/global"
+    METRICS = "/api/v1/monitoring/metrics"
+    METRICS_GLOBAL = "/api/v1/agents/{uuid}/metrics/global"
+    METRICS_BATCH = "/api/v1/monitoring/metrics/batch"
     
     # Routes pour les alertes
-    ALERTS = "agent/{uuid}/alerts"
-    ALERTS_STATUS = "agent/{uuid}/alerts/status"
+    ALERTS = "/api/v1/monitoring/alerts"
+    ALERTS_STATUS = "/api/v1/agents/{uuid}/alerts/status"
     
     # Routes pour les mises à jour
-    UPDATES = "api/agent/{uuid}/updates"
-    UPDATE_STATUS = "api/agent/{uuid}/updates/status"
-    UPDATE_DOWNLOAD = "api/agent/{uuid}/updates/download"
+    UPDATES = "/api/v1/agents/{uuid}/updates"
+    UPDATE_STATUS = "/api/v1/agents/{uuid}/updates/status"
+    UPDATE_DOWNLOAD = "/api/v1/agents/{uuid}/updates/download"
     
     # Routes pour les commandes
-    COMMANDS = "api/agent/{uuid}/commands"
-    COMMAND_STATUS = "api/agent/{uuid}/commands/{id}/status"
-    COMMAND_RESULT = "api/agent/{uuid}/commands/{id}/result"
+    COMMANDS = "/api/v1/agents/{uuid}/commands"
+    COMMAND_STATUS = "/api/v1/agents/{uuid}/commands/{id}/status"
+    COMMAND_RESULT = "/api/v1/agents/{uuid}/commands/{id}/result"
     
     # Routes pour les fichiers
-    FILES = "api/agent/{uuid}/files"
-    FILE_DOWNLOAD = "api/agent/{uuid}/files/{id}/download"
-    FILE_UPLOAD = "api/agent/{uuid}/files/upload"
+    FILES = "/api/v1/agents/{uuid}/files"
+    FILE_DOWNLOAD = "/api/v1/agents/{uuid}/files/{id}/download"
+    FILE_UPLOAD = "/api/v1/agents/{uuid}/files/upload"
+    
+    # Routes pour la santé de l'agent
+    HEALTH = "/api/v1/monitoring/agents/{uuid}/health"
+    
+    # Routes pour les informations système
+    SYSTEM_INFO = "/api/v1/monitoring/agents/{uuid}/system"
     
     @staticmethod
     def get_all_routes() -> dict:
