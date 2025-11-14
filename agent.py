@@ -9,7 +9,7 @@ from core.logger import log
 from core.config import get_identity, save_identity, save_config
 from core.loop import start_main_loop
 
-BASE_URL = "https://dev.mhemery.fr/api/orion/comm"
+BASE_URL = "https://mhemery.fr/api/orion/comm"
 
 # ============================================================
 # 🔐 Fonction : Demande de clé d’enrôlement

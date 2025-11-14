@@ -37,7 +37,7 @@ def load_config():
     """Charge la config générale. Fournit des valeurs par défaut si absente."""
     defaults = {
         "api": {
-            "base_url": os.getenv("LUMA_API_URL", "https://dev.mhemery.fr/api/orion/comm"),
+            "base_url": os.getenv("LUMA_API_URL", "https://mhemery.fr/api/orion/comm"),
         },
         "heartbeat_interval": 60,
         "sync_interval": 600,
