@@ -9,7 +9,7 @@ import platform
 from core.logger import log
 from core.config import get_identity, load_config
 
-AGENT_VERSION = "OA-0.2.0-Rigel"  # 🧱 à incrémenter à chaque release Orion Agent
+AGENT_VERSION = "OA-0.2.1-Rigel"  # 🧱 à incrémenter à chaque release Orion Agent
 
 def get_local_ip():
     """Récupère l'adresse IP locale (utilisée pour le reporting Orion)."""
@@ -42,8 +42,12 @@ def sync_with_luma(metrics=None):
     }
 
     try:
+        HEADERS = {
+            "User-Agent": "LUMA-Orion-Agent/1.0"
+        }
+
         url = cfg["api"]["base_url"].rstrip("/") + "/sync"
-        r = requests.post(url, json=payload, timeout=5)
+        r = requests.post(url, json=payload, headers=HEADERS, timeout=5)
 
         if r.status_code == 200:
             log(f"✅ Sync OK depuis {payload['ip']} — Agent v{AGENT_VERSION}")

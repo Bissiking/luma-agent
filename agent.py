@@ -9,7 +9,7 @@ from core.logger import log
 from core.config import get_identity, save_identity, save_config
 from core.loop import start_main_loop
 
-BASE_URL = "https://mhemery.fr/api/orion/comm"
+BASE_URL = "https://luma.mhemery.fr/api/orion/comm"
 
 # ============================================================
 # 🔐 Fonction : Demande de clé d’enrôlement
@@ -35,7 +35,11 @@ def register_with_luma():
 
     try:
         log(f"🔗 Enrôlement auprès de LUMA ({BASE_URL}/register)...")
-        r = requests.post(f"{BASE_URL}/register", json=payload, timeout=10)
+        HEADERS = {
+            "User-Agent": "LUMA-Orion-Agent/1.0"
+        }
+
+        r = requests.post(f"{BASE_URL}/register", json=payload, headers=HEADERS, timeout=10)
         r.raise_for_status()
         data = r.json()
 

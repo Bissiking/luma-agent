@@ -37,7 +37,10 @@ def push_alert(severity, alert_type, message, metadata=None):
 
     try:
         url = cfg["api"]["base_url"].rstrip("/") + "/alert"
-        r = requests.post(url, json=payload, timeout=5)
+        HEADERS = {
+            "User-Agent": "LUMA-Orion-Agent/1.0"
+        }
+        r = requests.post(url, json=payload, headers=HEADERS, timeout=5)
 
         if r.status_code == 200:
             log(f"🚨 Alerte Orion envoyée ({severity}) — {alert_type}: {message}")

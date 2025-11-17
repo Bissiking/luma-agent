@@ -18,7 +18,7 @@ def check_remote_config():
         return False
 
     url = cfg["api"]["base_url"].rstrip("/") + f"/pull-config/{ident['uuid']}"
-    headers = {"X-Auth-Token": ident["token"]}
+    headers = {"User-Agent": "LUMA-Orion-Agent/1.0", "X-Auth-Token": ident["token"]}
 
     log(f"[ConfigSync] 🌐 Vérification de configuration distante → {url}")
 
