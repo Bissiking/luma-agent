@@ -7,19 +7,54 @@ import os
 import json
 from dotenv import load_dotenv
 
-# Charger automatiquement le .env s'il existe
 load_dotenv()
 
 CONFIG_DIR = "config"
 IDENTITY_FILE = os.path.join(CONFIG_DIR, "agent_identity.json")
 CONFIG_FILE = os.path.join(CONFIG_DIR, "agent_config.json")
 
+
+# ============================================================
+# 🌐 Détection automatique de l'URL de base
+# ============================================================
+def detect_base_url():
+    """
+    Priorités :
+    1. Fichier .orion-env
+    2. Variable env LUMA_API_URL
+    3. Fallback : https://luma.mhemery.fr
+    """
+    env_file = os.path.join(os.path.dirname(__file__), "..", ".orion-env")
+
+    # 1️⃣ Fichier .orion-env
+    if os.path.exists(env_file):
+        with open(env_file, "r", encoding="utf-8") as f:
+            mode = f.read().strip()
+
+        if mode == "dev":
+            return "https://dev.mhemery.fr"
+        if mode == "local":
+            return "http://localhost:3000"
+        if mode == "prod":
+            return "https://luma.mhemery.fr"
+
+        if mode.startswith("custom="):
+            return mode.replace("custom=", "").strip()
+
+        print(f"[Config] ⚠️ Mode inconnu dans .orion-env : {mode}")
+
+    # 2️⃣ Variable env
+    if os.getenv("LUMA_API_URL"):
+        return os.getenv("LUMA_API_URL")
+
+    # 3️⃣ Fallback prod
+    return "https://luma.mhemery.fr"
+
+
 # ============================================================
 # 📦 Fonction : get_identity()
-# Récupère l'identité agent (uuid, token, api_key)
 # ============================================================
 def get_identity():
-    """Retourne les infos d'identité de l'agent, ou None si non initialisé."""
     try:
         if not os.path.exists(IDENTITY_FILE):
             return None
@@ -29,42 +64,43 @@ def get_identity():
         print(f"[Config] ⚠️ Impossible de charger agent_identity.json : {e}")
         return None
 
+
 # ============================================================
 # ⚙️ Fonction : load_config()
-# Récupère la configuration générale (API, intervalles)
 # ============================================================
 def load_config():
-    """Charge la config générale. Fournit des valeurs par défaut si absente."""
+    base_url = detect_base_url().rstrip("/") + "/api/orion/comm"
+
     defaults = {
-        "api": {
-            "base_url": os.getenv("LUMA_API_URL", "https://luma.mhemery.fr/api/orion/comm"),
-        },
+        "api": {"base_url": base_url},
         "heartbeat_interval": 60,
         "sync_interval": 600,
     }
 
     try:
         if not os.path.exists(CONFIG_FILE):
-            print("[Config] 📄 Fichier de config absent, utilisation des valeurs par défaut.")
+            print("[Config] 📄 Config absente → valeurs par défaut.")
             return defaults
 
         with open(CONFIG_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        # Merge config locale + env + defaults
         merged = defaults.copy()
         merged.update(data)
+
+        # merge propre pour "api"
         if "api" in data:
             merged["api"].update(data["api"])
+
         return merged
 
     except Exception as e:
         print(f"[Config] ⚠️ Erreur lecture config : {e}")
         return defaults
 
+
 # ============================================================
-# 🧩 Fonction : save_identity() / save_config()
-# Sauvegarde auto des fichiers après enrôlement
+# 🧩 Save config / identity
 # ============================================================
 def save_identity(data: dict):
     os.makedirs(CONFIG_DIR, exist_ok=True)
