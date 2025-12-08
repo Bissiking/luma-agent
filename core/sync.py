@@ -9,7 +9,7 @@ import platform
 from core.logger import log
 from core.config import get_identity, load_config
 
-AGENT_VERSION = "OA-0.2.2-Rigel"  # 🧱 à incrémenter à chaque release Orion Agent
+AGENT_VERSION = "OA-0.2.3-Rigel"  # 🧱 à incrémenter à chaque release Orion Agent
 
 def get_local_ip():
     """Récupère l'adresse IP locale (utilisée pour le reporting Orion)."""
