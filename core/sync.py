@@ -13,15 +13,14 @@ AGENT_VERSION = "OA-0.2.2-Rigel"  # 🧱 à incrémenter à chaque release Orion
 
 def get_local_ip():
     """Récupère l'adresse IP locale (utilisée pour le reporting Orion)."""
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-        s.close()
-        return ip
+        return s.getsockname()[0]
     except Exception:
         return "0.0.0.0"
-
+    finally:
+        s.close()
 
 def sync_with_luma(metrics=None):
     ident = get_identity()
