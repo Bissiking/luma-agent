@@ -6,6 +6,7 @@
 import os
 import json
 from dotenv import load_dotenv
+from core.logger import log
 
 load_dotenv()
 
@@ -41,7 +42,7 @@ def detect_base_url():
         if mode.startswith("custom="):
             return mode.replace("custom=", "").strip()
 
-        print(f"[Config] ⚠️ Mode inconnu dans .orion-env : {mode}")
+        log(f"[Config] ⚠️ Mode inconnu dans .orion-env : {mode}")
 
     # 2️⃣ Variable env
     if os.getenv("LUMA_API_URL"):
@@ -61,7 +62,7 @@ def get_identity():
         with open(IDENTITY_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception as e:
-        print(f"[Config] ⚠️ Impossible de charger agent_identity.json : {e}")
+        log(f"[Config] ⚠️ Impossible de charger agent_identity.json : {e}")
         return None
 
 
@@ -79,7 +80,7 @@ def load_config():
 
     try:
         if not os.path.exists(CONFIG_FILE):
-            print("[Config] 📄 Config absente → valeurs par défaut.")
+            log("[Config] 📄 Config absente → valeurs par défaut.")
             return defaults
 
         with open(CONFIG_FILE, "r", encoding="utf-8") as f:
@@ -95,7 +96,7 @@ def load_config():
         return merged
 
     except Exception as e:
-        print(f"[Config] ⚠️ Erreur lecture config : {e}")
+        log(f"[Config] ⚠️ Erreur lecture config : {e}")
         return defaults
 
 
@@ -106,10 +107,10 @@ def save_identity(data: dict):
     os.makedirs(CONFIG_DIR, exist_ok=True)
     with open(IDENTITY_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
-    print("[Config] 💾 agent_identity.json enregistré.")
+    log("[Config] 💾 agent_identity.json enregistré.")
 
 def save_config(data: dict):
     os.makedirs(CONFIG_DIR, exist_ok=True)
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
-    print("[Config] 💾 agent_config.json enregistré.")
+    log("[Config] 💾 agent_config.json enregistré.")

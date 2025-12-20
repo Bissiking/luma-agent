@@ -1,23 +1,40 @@
+# core/logger.py
 # ============================================================
-# Orion Agent — Logger utilitaire (UTC Edition)
+# Orion Agent — Logger journalier (UTC, Docker-safe)
 # Auteur : M. HEMERY
 # ============================================================
 
+import logging
 import os
-from datetime import datetime, timezone
+from logging.handlers import TimedRotatingFileHandler
 
 LOG_DIR = "logs"
 LOG_FILE = os.path.join(LOG_DIR, "agent.log")
 
-def log(msg):
-    """Affiche et enregistre un message horodaté en UTC."""
-    timestamp = datetime.now(timezone.utc).strftime("[%Y-%m-%d %H:%M:%S UTC]")
-    line = f"{timestamp} {msg}"
-    print(line)
+os.makedirs(LOG_DIR, exist_ok=True)
 
-    try:
-        os.makedirs(LOG_DIR, exist_ok=True)
-        with open(LOG_FILE, "a", encoding="utf-8") as f:
-            f.write(line + "\n")
-    except Exception as e:
-        print(f"[Logger] ⚠️ Impossible d’écrire dans {LOG_FILE} : {e}")
+logger = logging.getLogger("orion-agent")
+logger.setLevel(logging.INFO)
+
+formatter = logging.Formatter(
+    "[%(asctime)s UTC] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+
+handler = TimedRotatingFileHandler(
+    LOG_FILE,
+    when="midnight",      # rotation quotidienne
+    interval=1,
+    backupCount=14,       # rétention 14 jours
+    utc=True,             # IMPORTANT
+    encoding="utf-8"
+)
+
+handler.suffix = "%Y-%m-%d"   # nommage par jour
+handler.setFormatter(formatter)
+
+logger.addHandler(handler)
+logger.propagate = False
+
+def log(msg):
+    logger.info(msg)

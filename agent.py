@@ -23,7 +23,7 @@ from core.loop import start_main_loop
 config = load_config()
 BASE_URL = config["api"]["base_url"]   # déjà terminé par /api/orion/comm
 
-print(f"[Config] 🌐 Base URL détectée : {BASE_URL}")
+log(f"[Config] 🌐 Base URL détectée : {BASE_URL}")
 
 
 # ============================================================
@@ -82,7 +82,7 @@ def register_with_luma():
 # 🚀 Point d’entrée principal
 # ============================================================
 if __name__ == "__main__":
-    print("🚀 Orion Agent — Démarrage du module principal...")
+    log("🚀 Orion Agent — Démarrage du module principal...")
 
     identity = get_identity()
     if not identity:
