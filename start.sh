@@ -30,7 +30,10 @@ source /luma-agent/venv/bin/activate
 echo "[LUMA-Agent] 📦 Installation des dépendances…"
 pip install --upgrade pip
 pip install requests psutil
+pip install -r /luma-agent/requirements.txt
+
 
 # 5) Lancer l’agent automatiquement
 echo "[LUMA-Agent] 🚀 Lancement de l'agent Orion…"
+source /luma-agent/venv/bin/activate
 python /luma-agent/agent.py
