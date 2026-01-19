@@ -19,7 +19,7 @@ git --version
 ## Récupération de l’agent
 ```bash
 git clone https://github.com/Bissiking/luma-agent.git
-cd orion-agent
+cd luma-agent
 ```
 ---
 ## Script de lancement (start.sh)
