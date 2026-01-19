@@ -18,7 +18,7 @@ git --version
 
 ## Récupération de l’agent
 ```bash
-git clone https://github.com/<org>/orion-agent.git
+git clone https://github.com/Bissiking/luma-agent.git
 cd orion-agent
 ```
 ---
