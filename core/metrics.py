@@ -10,6 +10,7 @@ from core.config import load_config
 from core.alerts import push_alert
 from core.logger import log
 from core.alert_state import can_trigger_alert, clear_alert
+from core.services_collect import collect_services
 
 def collect_metrics():
     """
@@ -27,7 +28,7 @@ def collect_metrics():
 
     # === 💽 Disques multiples ===
     disks = []
-    ghosted = cfg.get("ghosted_disks", [])  # disques ignorés
+    ghosted = cfg.get("ghosted_disks", [])
     for part in psutil.disk_partitions(all=False):
         if any(g.lower() in part.mountpoint.lower() for g in ghosted):
             continue
@@ -44,6 +45,13 @@ def collect_metrics():
         except PermissionError:
             continue
 
+    # === 🧩 Services système (subtil & safe) ===
+    try:
+        services = collect_services()
+    except Exception as e:
+        log(f"⚠️ Erreur collecte services : {e}")
+        services = {}
+
     # === ⚙️ Structure finale ===
     metrics = {
         "hostname": hostname,
@@ -51,6 +59,7 @@ def collect_metrics():
         "ram": ram,
         "disks": disks,
         "uptime": uptime,
+        "services": services,
     }
 
     # === 🚨 Gestion des alertes ===
@@ -60,7 +69,6 @@ def collect_metrics():
         log(f"⚠️ Erreur vérification des seuils : {e}")
 
     return metrics
-
 
 def check_thresholds(cpu, ram, disks, cfg):
     cpu_th = cfg.get("cpu_threshold", 85)

@@ -6,6 +6,7 @@
 import time
 from core.sync import sync_with_luma
 from core.metrics import collect_metrics
+from core.services import check_services_watch
 from core.alerts import process_pending_alerts
 from core.config import load_config
 from core.config_sync import check_remote_config
@@ -37,6 +38,17 @@ def start_main_loop():
                 log(f"⚠️ Échec de collecte des métriques : {e}")
                 metrics = {}
 
+            # --- Surveillance des services ---
+            if "services" in metrics:
+                try:
+                    check_services_watch(
+                        metrics["services"],
+                        cfg
+                    )
+                except Exception as e:
+                    log(f"⚠️ Erreur surveillance services : {e}")
+
+        
             # --- Ping Orion (heartbeat) ---
             if now - last_ping >= heartbeat_interval:
                 try:
