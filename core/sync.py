@@ -9,7 +9,7 @@ import platform
 from core.logger import log
 from core.config import get_identity, load_config
 
-AGENT_VERSION = "OA-0.3.0-Rigel"  # 🧱 à incrémenter à chaque release Orion Agent
+AGENT_VERSION = "OA-0.3.1-Rigel"  # 🧱 à incrémenter à chaque release Orion Agent
 _OS_NAME = None
 
 
