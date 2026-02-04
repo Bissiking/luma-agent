@@ -33,10 +33,9 @@ def get_linux_distro():
                 if "=" in line:
                     k, v = line.strip().split("=", 1)
                     data[k] = v.strip('"')
-            return f"{data.get('NAME', 'Linux')} {data.get('VERSION', '')}".strip()
+            return data.get("PRETTY_NAME") or data.get("NAME", "Linux")
     except Exception:
         return "Linux (unknown)"
-
 
 def get_os_name():
     global _OS_NAME
