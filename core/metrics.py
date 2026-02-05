@@ -98,6 +98,8 @@ def collect_metrics():
         try:
             from core.modules.docker.collect import collect_docker
             inject_module(metrics, "docker", collect_docker)
+            log(f" Module docker OK")
+            
         except Exception as e:
             log(f"⚠️ Module docker non chargé : {e}")
 
