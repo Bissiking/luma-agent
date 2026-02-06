@@ -35,4 +35,4 @@ pip install -r requirements.txt
 
 # 5) Lancer l’agent automatiquement
 echo "[LUMA-Agent] 🚀 Lancement de l'agent Orion…"
-python /luma-agent/agent.py
+python agent.py
