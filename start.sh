@@ -30,7 +30,7 @@ source /luma-agent/venv/bin/activate
 echo "[LUMA-Agent] 📦 Installation des dépendances…"
 pip install --upgrade pip
 pip install requests psutil
-pip install -r /requirements.txt
+pip install -r requirements.txt
 
 
 # 5) Lancer l’agent automatiquement
