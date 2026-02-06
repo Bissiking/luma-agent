@@ -32,6 +32,54 @@ def inject_module(metrics: dict, name: str, fn):
     except Exception as e:
         log(f"⚠️ Module {name} indisponible : {e}")
 
+# ============================================================
+# 🌐 Réseau CORE — Interfaces & trafic
+# ============================================================
+
+def collect_network_core():
+    import socket
+
+    interfaces = []
+
+    addrs = psutil.net_if_addrs()
+    stats = psutil.net_if_stats()
+
+    for name, addr_list in addrs.items():
+        stat = stats.get(name)
+        if not stat or not stat.isup:
+            continue
+
+        ip = None
+        for addr in addr_list:
+            if addr.family == socket.AF_INET:
+                ip = addr.address
+                break
+
+        if not ip:
+            continue
+
+        iface_type = (
+            "loopback" if name.lower().startswith("lo")
+            else "wifi" if name.lower().startswith(("wl", "wi"))
+            else "ethernet"
+        )
+
+        interfaces.append({
+            "name": name,
+            "type": iface_type,
+            "ip": ip
+        })
+
+    io = psutil.net_io_counters(pernic=False)
+
+    return {
+        "interfaces": interfaces,
+        "traffic": {
+            "in": io.bytes_recv,
+            "out": io.bytes_sent
+        }
+    }
+
 
 # ============================================================
 # 📊 Collecte principale
@@ -51,7 +99,9 @@ def collect_metrics():
     cpu = psutil.cpu_percent(interval=1)
     ram = psutil.virtual_memory().percent
     uptime = time.time() - psutil.boot_time()
-
+    # === 🌐 Réseau (CORE) ===
+    network = collect_network_core()
+    
     # === 💽 Disques multiples (CORE) ===
     disks = []
     ghosted = cfg.get("ghosted_disks", [])
@@ -87,6 +137,7 @@ def collect_metrics():
         "disks": disks,
         "uptime": uptime,
         "services": services,
+        "network": network,
     }
 
     # ========================================================
@@ -102,14 +153,6 @@ def collect_metrics():
             
         except Exception as e:
             log(f"⚠️ Module docker non chargé : {e}")
-
-    # 🌐 Network / Traffic
-    if modules.get("network"):
-        try:
-            from core.modules.network.collect import collect_network
-            inject_module(metrics, "network", collect_network)
-        except Exception as e:
-            log(f"⚠️ Module network non chargé : {e}")
 
     # 🖥️ GPU
     if modules.get("gpu"):
