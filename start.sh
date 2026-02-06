@@ -46,8 +46,8 @@ echo "[LUMA-Agent] ⚙️ Activation du venv…"
 echo "[LUMA-Agent] 📦 Installation des dépendances Python…"
 pip install --upgrade pip
 pip install requests psutil
-pip install -r /luma-agent/requirements.txt
+pip install -r requirements.txt
 
 # --- Lancement ---
 echo "[LUMA-Agent] 🚀 Lancement de l'agent Orion…"
-exec python /luma-agent/agent.py
+exec python agent.py
