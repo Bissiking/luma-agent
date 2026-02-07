@@ -7,3 +7,4 @@
 # FICHIER
 INSCTRUCTION.txt
 .orion-env
+*.pyc
