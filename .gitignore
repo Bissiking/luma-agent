@@ -2,7 +2,7 @@
 /config
 /data
 /logs
-/core/__pycache__
+*__pycache__*
 # FICHIER
 INSCTRUCTION.txt
 .orion-env
