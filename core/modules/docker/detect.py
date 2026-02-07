@@ -3,21 +3,11 @@
 # Auteur : M. HEMERY
 # ============================================================
 
-import shutil
-import subprocess
-
+import os
 
 def docker_available():
-    """Vérifie si Docker est installé et accessible."""
-    if not shutil.which("docker"):
-        return False
-
-    try:
-        subprocess.check_output(
-            ["docker", "info"],
-            stderr=subprocess.DEVNULL,
-            timeout=3
-        )
-        return True
-    except Exception:
-        return False
+    """
+    Docker est considéré disponible si le socket Docker est présent.
+    Compatible host + container.
+    """
+    return os.path.exists("/var/run/docker.sock")
