@@ -19,18 +19,20 @@ from core.services_collect import collect_services
 # ============================================================
 
 def inject_module(metrics: dict, name: str, fn):
-    """
-    Injecte un module optionnel dans metrics.
-    - name : nom du module (ex: 'docker')
-    - fn   : fonction de collecte
-    Le module est ajouté uniquement si la collecte retourne quelque chose.
-    """
+    log(f"🔌 Tentative injection module : {name}")
+
     try:
         data = fn()
-        if data is not None:
-            metrics[name] = data
+
+        if data is None:
+            log(f"⚠️ Module {name} n’a retourné aucune donnée")
+            return
+
+        metrics[name] = data
+        log(f"✅ Module {name} injecté avec succès")
+
     except Exception as e:
-        log(f"⚠️ Module {name} indisponible : {e}")
+        log(f"❌ Module {name} indisponible : {e}")
 
 # ============================================================
 # 🌐 Réseau CORE — Interfaces & trafic
@@ -146,13 +148,20 @@ def collect_metrics():
 
     # 🐳 Docker
     if modules.get("docker"):
-        try:
-            from core.modules.docker.collect import collect_docker
-            inject_module(metrics, "docker", collect_docker)
-            log(f" Module docker OK")
-            
-        except Exception as e:
-            log(f"⚠️ Module docker non chargé : {e}")
+        log("🐳 Vérification Docker…")
+        from core.modules.docker.detect import docker_available
+
+        if not docker_available():
+            log("⚠️ Docker non disponible (binaire ou socket)")
+        else:
+            log("🐳 Docker disponible")
+
+            try:
+                from core.modules.docker.collect import collect_docker
+                inject_module(metrics, "docker", collect_docker)
+                log("🐳 Module docker injecté")
+            except Exception as e:
+                log(f"⚠️ Module docker KO : {e}")
 
     # 🖥️ GPU
     if modules.get("gpu"):
