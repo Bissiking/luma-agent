@@ -202,7 +202,7 @@ def check_thresholds(cpu, ram, disks, cfg):
     # CPU
     if cpu >= cpu_th:
         sev = "critical" if cpu >= cpu_th + 10 else "warning"
-        if can_trigger_alert("cpu"):
+        if can_trigger_alert("cpu", sev):
             push_alert(sev, "cpu", f"CPU élevé ({cpu:.1f}%)", {"value": cpu})
     else:
         clear_alert("cpu")
@@ -210,7 +210,7 @@ def check_thresholds(cpu, ram, disks, cfg):
     # RAM
     if ram >= ram_th:
         sev = "critical" if ram >= ram_th + 10 else "warning"
-        if can_trigger_alert("ram"):
+        if can_trigger_alert("ram", sev):
             push_alert(sev, "ram", f"RAM élevée ({ram:.1f}%)", {"value": ram})
     else:
         clear_alert("ram")
@@ -220,7 +220,7 @@ def check_thresholds(cpu, ram, disks, cfg):
         key = f"disk:{d['mount']}"
         if d["percent"] >= disk_th:
             sev = "critical" if d["percent"] >= disk_th + 5 else "warning"
-            if can_trigger_alert(key):
+            if can_trigger_alert(key, sev):
                 push_alert(
                     sev,
                     "disk",
