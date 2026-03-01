@@ -6,6 +6,7 @@
 import psutil
 import platform
 import time
+import ctypes
 
 from core.config import load_config
 from core.alerts import push_alert
@@ -83,6 +84,60 @@ def collect_network_core():
     }
 
 
+def _windows_volume_info(mountpoint):
+    """
+    Retourne des informations supplémentaires Windows pour un volume.
+    """
+    if platform.system() != "Windows":
+        return {}
+
+    root = mountpoint
+    if len(root) >= 2 and root[1] == ":":
+        root = f"{root[:2]}\\"
+
+    drive_type_map = {
+        2: "Disque amovible",
+        3: "Disque local",
+        4: "Partage reseau",
+        5: "CD-ROM",
+        6: "RAM Disk",
+    }
+
+    drive_type_id = ctypes.windll.kernel32.GetDriveTypeW(ctypes.c_wchar_p(root))
+    drive_type = drive_type_map.get(drive_type_id, "Lecteur")
+
+    vol_name = ctypes.create_unicode_buffer(261)
+    fs_name = ctypes.create_unicode_buffer(261)
+    serial = ctypes.c_uint(0)
+    max_comp = ctypes.c_uint(0)
+    flags = ctypes.c_uint(0)
+
+    ok = ctypes.windll.kernel32.GetVolumeInformationW(
+        ctypes.c_wchar_p(root),
+        vol_name,
+        len(vol_name),
+        ctypes.byref(serial),
+        ctypes.byref(max_comp),
+        ctypes.byref(flags),
+        fs_name,
+        len(fs_name),
+    )
+
+    label = vol_name.value or None
+    serial_hex = f"{serial.value:08X}" if ok else None
+    filesystem = fs_name.value or None
+    drive = root[:2] if len(root) >= 2 and root[1] == ":" else root.rstrip("\\")
+    display_name = f"{label} ({drive})" if label else f"{drive_type} ({drive})"
+
+    return {
+        "label": label,
+        "serial": serial_hex,
+        "filesystem_windows": filesystem,
+        "drive_type": drive_type,
+        "display_name": display_name,
+    }
+
+
 # ============================================================
 # 📊 Collecte principale
 # ============================================================
@@ -113,13 +168,20 @@ def collect_metrics():
             continue
         try:
             usage = psutil.disk_usage(part.mountpoint)
+            win_info = _windows_volume_info(part.mountpoint)
             disks.append({
+                "device": part.device,
                 "mount": part.mountpoint,
                 "fstype": part.fstype,
                 "total": round(usage.total / (1024 ** 3), 1),
                 "used": round(usage.used / (1024 ** 3), 1),
                 "free": round(usage.free / (1024 ** 3), 1),
-                "percent": usage.percent
+                "percent": usage.percent,
+                "label": win_info.get("label"),
+                "serial": win_info.get("serial"),
+                "filesystem_windows": win_info.get("filesystem_windows"),
+                "drive_type": win_info.get("drive_type"),
+                "display_name": win_info.get("display_name"),
             })
         except PermissionError:
             continue
