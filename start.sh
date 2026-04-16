@@ -1,53 +1,40 @@
 #!/bin/sh
-# =============================
-#  LUMA ORION AGENT – Setup
-#  Auteur : M. HEMERY
-# =============================
 
 set -e
 
-echo "[LUMA-Agent] 🔍 Préparation…"
+AGENT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+VENV_DIR="$AGENT_DIR/venv"
 
-# --- Détection distro ---
+echo "[LUMA-Agent] Preparation..."
+
 if [ -f /etc/alpine-release ]; then
     DISTRO="alpine"
 elif command -v apt >/dev/null 2>&1; then
     DISTRO="debian"
 else
-    echo "[LUMA-Agent] ❌ Distribution non supportée"
+    echo "[LUMA-Agent] Distribution non supportee"
     exit 1
 fi
 
-echo "[LUMA-Agent] 🧭 Distro détectée : $DISTRO"
+echo "[LUMA-Agent] Distro detectee : $DISTRO"
 
-# --- Dépendances système ---
 if [ "$DISTRO" = "debian" ]; then
-    if ! dpkg -s python3-venv >/dev/null 2>&1; then
-        echo "[LUMA-Agent] 📦 Installation python3-venv…"
+    if ! command -v python3 >/dev/null 2>&1; then
         apt update -y
         apt install -y python3 python3-venv python3-pip
     fi
 elif [ "$DISTRO" = "alpine" ]; then
-    echo "[LUMA-Agent] 📦 Installation Python (apk)…"
     apk add --no-cache python3 py3-pip py3-virtualenv
 fi
 
-# --- Venv ---
-if [ ! -d "/luma-agent/venv" ]; then
-    echo "[LUMA-Agent] 🧪 Création de l'environnement virtuel…"
-    python3 -m venv /luma-agent/venv
+if [ ! -d "$VENV_DIR" ]; then
+    echo "[LUMA-Agent] Creation du venv..."
+    python3 -m venv "$VENV_DIR"
 fi
 
-# --- Activation ---
-echo "[LUMA-Agent] ⚙️ Activation du venv…"
-. /luma-agent/venv/bin/activate
+echo "[LUMA-Agent] Installation des dependances Python..."
+"$VENV_DIR/bin/pip" install --upgrade pip
+"$VENV_DIR/bin/pip" install -r "$AGENT_DIR/requirements.txt"
 
-# --- Python deps ---
-echo "[LUMA-Agent] 📦 Installation des dépendances Python…"
-pip install --upgrade pip
-pip install requests psutil
-pip install -r requirements.txt
-
-# --- Lancement ---
-echo "[LUMA-Agent] 🚀 Lancement de l'agent Orion…"
-exec python agent.py
+echo "[LUMA-Agent] Lancement de l'agent Orion..."
+exec "$VENV_DIR/bin/python" "$AGENT_DIR/agent.py"

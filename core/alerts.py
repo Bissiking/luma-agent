@@ -3,10 +3,10 @@
 # Auteur : M. HEMERY
 # ============================================================
 
-import requests
 import json
 from core.logger import log
 from core.config import get_identity, load_config
+from core.http import get_http_session
 
 # ============================================================
 # 🚨 Envoi d'une alerte à LUMA Orion
@@ -37,10 +37,8 @@ def push_alert(severity, alert_type, message, metadata=None):
 
     try:
         url = cfg["api"]["base_url"].rstrip("/") + "/alert"
-        HEADERS = {
-            "User-Agent": "LUMA-Orion-Agent/1.0"
-        }
-        r = requests.post(url, json=payload, headers=HEADERS, timeout=5)
+        timeout = cfg.get("api", {}).get("timeout", 5)
+        r = get_http_session().post(url, json=payload, timeout=timeout)
 
         if r.status_code == 200:
             log(f"🚨 Alerte Orion envoyée ({severity}) — {alert_type}: {message}")

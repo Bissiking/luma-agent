@@ -1,49 +1,42 @@
-# ============================================================
-# Orion Agent — Collecte et supervision des métriques système
-# Auteur : M. HEMERY
-# ============================================================
-
-import psutil
+import ctypes
 import platform
 import time
-import ctypes
 
-from core.config import load_config
-from core.alerts import push_alert
-from core.logger import log
+import psutil
+
 from core.alert_state import can_trigger_alert, clear_alert
+from core.alerts import push_alert
+from core.config import load_config
+from core.installation import collect_installation_status
+from core.logger import log
 from core.services_collect import collect_services
 
+psutil.cpu_percent(interval=None)
 
-# ============================================================
-# 🔌 Helper — Injection de modules optionnels
-# ============================================================
 
-def inject_module(metrics: dict, name: str, fn):
-    log(f"🔌 Tentative injection module : {name}")
+def inject_module(modules: dict, failures: list, name: str, fn):
+    log(f"Tentative injection module : {name}")
 
     try:
         data = fn()
-
         if data is None:
-            log(f"⚠️ Module {name} n’a retourné aucune donnée")
+            log(f"Module {name} n'a retourne aucune donnee")
             return
 
-        metrics[name] = data
-        log(f"✅ Module {name} injecté avec succès")
+        if isinstance(data, dict) and data.get("partial_failures"):
+            failures.extend(f"{name}:{item}" for item in data["partial_failures"])
 
+        modules[name] = data
+        log(f"Module {name} injecte avec succes")
     except Exception as e:
-        log(f"❌ Module {name} indisponible : {e}")
+        failures.append(f"{name}:{e}")
+        log(f"Module {name} indisponible : {e}")
 
-# ============================================================
-# 🌐 Réseau CORE — Interfaces & trafic
-# ============================================================
 
 def collect_network_core():
     import socket
 
     interfaces = []
-
     addrs = psutil.net_if_addrs()
     stats = psutil.net_if_stats()
 
@@ -70,24 +63,20 @@ def collect_network_core():
         interfaces.append({
             "name": name,
             "type": iface_type,
-            "ip": ip
+            "ip": ip,
         })
 
     io = psutil.net_io_counters(pernic=False)
-
     return {
         "interfaces": interfaces,
         "traffic": {
             "in": io.bytes_recv,
-            "out": io.bytes_sent
-        }
+            "out": io.bytes_sent,
+        },
     }
 
 
 def _windows_volume_info(mountpoint):
-    """
-    Retourne des informations supplémentaires Windows pour un volume.
-    """
     if platform.system() != "Windows":
         return {}
 
@@ -138,28 +127,17 @@ def _windows_volume_info(mountpoint):
     }
 
 
-# ============================================================
-# 📊 Collecte principale
-# ============================================================
-
-def collect_metrics():
-    """
-    Collecte les métriques système principales.
-    Retourne un dictionnaire complet pour /sync.
-    Déclenche aussi les alertes si les seuils sont dépassés.
-    """
+def collect_metrics(include_modules=True):
     cfg = load_config()
-    modules = cfg.get("modules", {})
+    modules_cfg = cfg.get("modules", {})
+    partial_failures = []
 
-    # === 🧩 Données CORE ===
     hostname = platform.node()
-    cpu = psutil.cpu_percent(interval=1)
+    cpu = psutil.cpu_percent(interval=None)
     ram = psutil.virtual_memory().percent
-    uptime = time.time() - psutil.boot_time()
-    # === 🌐 Réseau (CORE) ===
+    uptime = int(time.time() - psutil.boot_time())
     network = collect_network_core()
-    
-    # === 💽 Disques multiples (CORE) ===
+
     disks = []
     ghosted = cfg.get("ghosted_disks", [])
 
@@ -186,15 +164,14 @@ def collect_metrics():
         except PermissionError:
             continue
 
-    # === 🧩 Services système (CORE) ===
     try:
         services = collect_services()
     except Exception as e:
-        log(f"⚠️ Erreur collecte services : {e}")
+        partial_failures.append(f"services:{e}")
+        log(f"Erreur collecte services : {e}")
         services = {}
 
-    # === ⚙️ Structure CORE ===
-    metrics = {
+    core_metrics = {
         "hostname": hostname,
         "cpu": cpu,
         "ram": ram,
@@ -202,92 +179,93 @@ def collect_metrics():
         "uptime": uptime,
         "services": services,
         "network": network,
+        "installation": collect_installation_status(),
     }
 
-    # ========================================================
-    # 🔌 MODULES OPTIONNELS
-    # ========================================================
+    module_metrics = {}
 
-    # 🐳 Docker
-    if modules.get("docker"):
-        log("🐳 Vérification Docker…")
-        from core.modules.docker.detect import docker_available
+    if include_modules:
+        if modules_cfg.get("docker"):
+            log("Verification Docker...")
+            from core.modules.docker.detect import docker_available
 
-        if not docker_available():
-            log("⚠️ Docker non disponible (binaire ou socket)")
-        else:
-            log("🐳 Docker disponible")
-
-            try:
+            if docker_available():
                 from core.modules.docker.collect import collect_docker
-                inject_module(metrics, "docker", collect_docker)
-                log("🐳 Module docker injecté")
+
+                inject_module(module_metrics, partial_failures, "docker", collect_docker)
+            else:
+                log("Docker non disponible")
+
+        minecraft_cfg = modules_cfg.get("minecraft", {})
+        if isinstance(minecraft_cfg, dict) and minecraft_cfg.get("enabled"):
+            from core.modules.minecraft.collect import collect_minecraft
+
+            inject_module(
+                module_metrics,
+                partial_failures,
+                "minecraft",
+                lambda: collect_minecraft(minecraft_cfg),
+            )
+
+        if modules_cfg.get("gpu"):
+            try:
+                from core.modules.gpu.collect import collect_gpu
+
+                inject_module(module_metrics, partial_failures, "gpu", collect_gpu)
             except Exception as e:
-                log(f"⚠️ Module docker KO : {e}")
+                partial_failures.append(f"gpu:{e}")
+                log(f"Module gpu non charge : {e}")
 
-    # 🖥️ GPU
-    if modules.get("gpu"):
-        try:
-            from core.modules.gpu.collect import collect_gpu
-            inject_module(metrics, "gpu", collect_gpu)
-        except Exception as e:
-            log(f"⚠️ Module gpu non chargé : {e}")
+        if modules_cfg.get("proxmox"):
+            try:
+                from core.modules.proxmox.collect import collect_proxmox
 
-    # 🧠 Proxmox
-    if modules.get("proxmox"):
-        try:
-            from core.modules.proxmox.collect import collect_proxmox
-            inject_module(metrics, "proxmox", collect_proxmox)
-        except Exception as e:
-            log(f"⚠️ Module proxmox non chargé : {e}")
+                inject_module(module_metrics, partial_failures, "proxmox", collect_proxmox)
+            except Exception as e:
+                partial_failures.append(f"proxmox:{e}")
+                log(f"Module proxmox non charge : {e}")
 
-    # ========================================================
-    # 🚨 Alertes CORE
-    # ========================================================
     try:
         check_thresholds(cpu, ram, disks, cfg)
     except Exception as e:
-        log(f"⚠️ Erreur vérification des seuils : {e}")
+        log(f"Erreur verification des seuils : {e}")
 
-    return metrics
+    return {
+        "core": core_metrics,
+        "modules": module_metrics,
+        "partial_failures": partial_failures,
+    }
 
-
-# ============================================================
-# 🚨 Seuils & alertes CORE
-# ============================================================
 
 def check_thresholds(cpu, ram, disks, cfg):
     cpu_th = cfg.get("cpu_threshold", 85)
     ram_th = cfg.get("ram_threshold", 85)
     disk_th = cfg.get("disk_threshold", 90)
 
-    # CPU
     if cpu >= cpu_th:
         sev = "critical" if cpu >= cpu_th + 10 else "warning"
         if can_trigger_alert("cpu", sev):
-            push_alert(sev, "cpu", f"CPU élevé ({cpu:.1f}%)", {"value": cpu})
+            push_alert(sev, "cpu", f"CPU eleve ({cpu:.1f}%)", {"value": cpu})
     else:
         clear_alert("cpu")
 
-    # RAM
     if ram >= ram_th:
         sev = "critical" if ram >= ram_th + 10 else "warning"
         if can_trigger_alert("ram", sev):
-            push_alert(sev, "ram", f"RAM élevée ({ram:.1f}%)", {"value": ram})
+            push_alert(sev, "ram", f"RAM elevee ({ram:.1f}%)", {"value": ram})
     else:
         clear_alert("ram")
 
-    # DISK
-    for d in disks:
-        key = f"disk:{d['mount']}"
-        if d["percent"] >= disk_th:
-            sev = "critical" if d["percent"] >= disk_th + 5 else "warning"
+    for disk in disks:
+        key = f"disk:{disk['mount']}"
+        if disk["percent"] >= disk_th:
+            sev = "critical" if disk["percent"] >= disk_th + 5 else "warning"
             if can_trigger_alert(key, sev):
                 push_alert(
                     sev,
                     "disk",
-                    f"Disque {d['mount']} saturé ({d['percent']}%)",
-                    {"mount": d["mount"], "value": d["percent"]}
+                    f"Disque {disk['mount']} sature ({disk['percent']}%)",
+                    {"mount": disk["mount"], "value": disk["percent"]},
                 )
         else:
             clear_alert(key)

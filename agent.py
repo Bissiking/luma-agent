@@ -10,7 +10,6 @@ if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
 import platform
-import requests
 
 from core.logger import log
 from core.config import (
@@ -19,6 +18,7 @@ from core.config import (
     save_config,
     load_config
 )
+from core.http import get_http_session
 from core.loop import start_main_loop
 
 # ============================================================
@@ -58,12 +58,16 @@ def register_with_luma():
     try:
         log(f"🔗 Enrôlement auprès de LUMA ({BASE_URL}/register)...")
 
-        HEADERS = {
-            "User-Agent": "LUMA-Orion-Agent/1.0",
+        headers = {
             "x-luma-service-token": os.getenv("ORION_INTERNAL_TOKEN", "")
         }
-
-        r = requests.post(f"{BASE_URL}/register", json=payload, headers=HEADERS, timeout=10)
+        timeout = config.get("api", {}).get("timeout", 10)
+        r = get_http_session().post(
+            f"{BASE_URL}/register",
+            json=payload,
+            headers=headers,
+            timeout=timeout,
+        )
         r.raise_for_status()
         data = r.json()
 

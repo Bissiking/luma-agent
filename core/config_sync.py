@@ -3,10 +3,10 @@
 # Auteur : M. HEMERY
 # ============================================================
 
-import requests
 from core.logger import log
 from core.config import get_identity, load_config, save_config
 from requests.exceptions import Timeout, ConnectionError
+from core.http import get_http_session
 
 def check_remote_config():
     """Vérifie périodiquement s’il existe une nouvelle configuration à appliquer depuis LUMA."""
@@ -18,12 +18,13 @@ def check_remote_config():
         return False
 
     url = cfg["api"]["base_url"].rstrip("/") + f"/pull-config/{ident['uuid']}"
-    headers = {"User-Agent": "LUMA-Orion-Agent/1.0", "X-Auth-Token": ident["token"]}
+    headers = {"X-Auth-Token": ident["token"]}
 
     log(f"[ConfigSync] 🌐 Vérification de configuration distante → {url}")
 
     try:
-        r = requests.get(url, headers=headers, timeout=5)
+        timeout = cfg.get("api", {}).get("timeout", 5)
+        r = get_http_session().get(url, headers=headers, timeout=timeout)
 
         log(f"[ConfigSync] ↩️ Réponse HTTP {r.status_code}")
 
