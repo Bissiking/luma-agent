@@ -6,7 +6,7 @@ from core.config import get_identity, load_config
 from core.http import get_http_session
 from core.logger import log
 
-AGENT_VERSION = "OA-0.6.0-Rigel"
+AGENT_VERSION = "OA-0.6.1-Rigel"
 SCHEMA_VERSION = "2.0"
 
 _OS_NAME = None
