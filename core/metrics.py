@@ -14,6 +14,21 @@ from core.services_collect import collect_services
 psutil.cpu_percent(interval=None)
 
 
+def _resolve_minecraft_config(modules_cfg):
+    minecraft_cfg = modules_cfg.get("minecraft", {})
+
+    if minecraft_cfg is True:
+        return {"enabled": True}
+
+    if minecraft_cfg is False or minecraft_cfg is None:
+        return None
+
+    if isinstance(minecraft_cfg, dict) and minecraft_cfg.get("enabled"):
+        return minecraft_cfg
+
+    return None
+
+
 def inject_module(modules: dict, failures: list, name: str, fn):
     log(f"Tentative injection module : {name}")
 
@@ -196,8 +211,8 @@ def collect_metrics(include_modules=True):
             else:
                 log("Docker non disponible")
 
-        minecraft_cfg = modules_cfg.get("minecraft", {})
-        if isinstance(minecraft_cfg, dict) and minecraft_cfg.get("enabled"):
+        minecraft_cfg = _resolve_minecraft_config(modules_cfg)
+        if minecraft_cfg:
             from core.modules.minecraft.collect import collect_minecraft
 
             inject_module(

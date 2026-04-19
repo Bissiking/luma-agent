@@ -67,6 +67,18 @@ Variables d'environnement supportees par l'installeur :
 
 Le module Minecraft est optionnel et se configure dans `config/agent_config.json` :
 
+Activation simple, comme Docker :
+
+```json
+{
+  "modules": {
+    "minecraft": true
+  }
+}
+```
+
+Configuration detaillee :
+
 ```json
 {
   "modules": {
