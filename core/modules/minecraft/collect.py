@@ -3,6 +3,7 @@ import os
 import socket
 import struct
 import time
+from datetime import datetime, timezone
 from typing import Optional
 
 import psutil
@@ -17,6 +18,10 @@ _DETECTION_CACHE = {
     "expires_at": 0.0,
     "servers": None,
 }
+
+
+def _iso_utc_now():
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def _write_varint(value: int) -> bytes:
@@ -232,18 +237,25 @@ def _build_detected_server(proc_info: dict) -> dict:
             name = folder
 
     return {
+        "id": name,
         "name": name,
-        "kind": "java",
+        "edition": "java",
         "host": "127.0.0.1",
         "port": port,
         "pid": pid,
-        "status": "running",
-        "available": True,
-        "reachable": False,
+        "online": False,
         "discovery": "local_process",
         "detected_via": "process",
         "started_at": int(proc_info.get("create_time") or time.time()),
         "cmdline": _normalize_cmdline(proc_info.get("cmdline")),
+        "ping_ms": None,
+        "version": None,
+        "motd": None,
+        "players": {
+            "online": 0,
+            "max": 0,
+            "list": [],
+        },
     }
 
 
@@ -367,13 +379,19 @@ def _probe_java_server(host: str, port: int, timeout: float):
 def _probe_detected_server(server: dict, timeout: float, failures: list):
     try:
         probe = _probe_java_server(server["host"], int(server["port"]), timeout)
-        server.update(probe)
-        server["probe_status"] = "ok"
+        server["online"] = True
+        server["ping_ms"] = probe.get("latency_ms")
+        server["version"] = probe.get("version")
+        server["motd"] = probe.get("motd")
+        server["players"] = {
+            "online": probe.get("players_online") or 0,
+            "max": probe.get("players_max") or 0,
+            "list": probe.get("players_list") or [],
+        }
     except Exception as exc:
         log(f"Module minecraft KO probe local pour {server['name']} : {exc}")
         failures.append(f"{server['name']}:{exc}")
-        server["probe_status"] = "failed"
-        server["probe_error"] = str(exc)
+        server["online"] = False
 
 
 def _collect_configured_servers(module_config: dict, timeout: float, failures: list):
@@ -385,26 +403,35 @@ def _collect_configured_servers(module_config: dict, timeout: float, failures: l
         port = int(server.get("port", DEFAULT_MINECRAFT_PORT))
         kind = (server.get("kind") or "java").lower()
         name = server.get("name") or f"minecraft-{index + 1}"
+        server_id = server.get("id") or name
 
         if not host:
             failures.append(f"{name}:missing_host")
             results.append({
+                "id": server_id,
                 "name": name,
-                "kind": kind,
-                "available": False,
-                "status": "unknown",
-                "error": "missing host",
+                "edition": kind,
+                "host": None,
+                "port": port,
+                "online": False,
+                "ping_ms": None,
+                "version": None,
+                "motd": None,
+                "players": {"online": 0, "max": 0, "list": []},
             })
             continue
 
         item = {
+            "id": server_id,
             "name": name,
-            "kind": kind,
+            "edition": kind,
             "host": host,
             "port": port,
-            "available": False,
-            "reachable": False,
-            "status": "unknown",
+            "online": False,
+            "ping_ms": None,
+            "version": None,
+            "motd": None,
+            "players": {"online": 0, "max": 0, "list": []},
             "discovery": "config",
         }
 
@@ -412,15 +439,19 @@ def _collect_configured_servers(module_config: dict, timeout: float, failures: l
             if kind != "java":
                 raise NotImplementedError(f"unsupported server kind: {kind}")
 
-            item.update(_probe_java_server(host, port, timeout))
-            item["available"] = True
-            item["status"] = "running"
-            item["probe_status"] = "ok"
+            probe = _probe_java_server(host, port, timeout)
+            item["online"] = True
+            item["ping_ms"] = probe.get("latency_ms")
+            item["version"] = probe.get("version")
+            item["motd"] = probe.get("motd")
+            item["players"] = {
+                "online": probe.get("players_online") or 0,
+                "max": probe.get("players_max") or 0,
+                "list": probe.get("players_list") or [],
+            }
         except Exception as exc:
             log(f"Module minecraft KO pour {name} : {exc}")
             failures.append(f"{name}:{exc}")
-            item["probe_status"] = "failed"
-            item["error"] = str(exc)
 
         results.append(item)
 
@@ -441,9 +472,8 @@ def collect_minecraft(module_config):
         results.extend(_collect_configured_servers(module_config, timeout, failures))
 
     return {
-        "count": len(results),
-        "available": sum(1 for item in results if item.get("available")),
+        "status": "ok",
+        "error": None,
+        "collected_at": _iso_utc_now(),
         "servers": results,
-        "partial_failures": failures,
-        "timestamp": int(time.time()),
     }

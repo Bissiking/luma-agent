@@ -1,12 +1,13 @@
 import platform
 import socket
 import time
+from datetime import datetime, timezone
 
 from core.config import get_identity, load_config
 from core.http import get_http_session
 from core.logger import log
 
-AGENT_VERSION = "OA-0.6.2-Rigel"
+AGENT_VERSION = "OA-0.6.3-Rigel"
 SCHEMA_VERSION = "2.0"
 
 _OS_NAME = None
@@ -60,61 +61,38 @@ def get_os_name():
     return os_name
 
 
+def _iso_utc_now():
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
 def build_sync_payload(metrics=None, sync_kind="full"):
     ident = get_identity()
     if not ident:
         log("Aucune identite trouvee -> agent non enregistre.")
         return None
 
-    cfg = load_config()
     metrics = metrics or {}
     core_metrics = metrics.get("core", {})
     modules = metrics.get("modules", {})
-    partial_failures = metrics.get("partial_failures", [])
-
-    local_ip = get_local_ip()
     os_name = get_os_name()
     arch = platform.machine()
 
-    configured_modules = cfg.get("modules", {})
-    capabilities = []
-    for name, value in configured_modules.items():
-        if isinstance(value, dict) and value.get("enabled"):
-            capabilities.append(name)
-        elif value is True:
-            capabilities.append(name)
-    capabilities = sorted(capabilities)
-
     return {
-        "schema_version": SCHEMA_VERSION,
-        "uuid": ident["uuid"],
-        "token": ident["token"],
-        "ip": local_ip,
-        "os": os_name,
-        "arch": arch,
-        "version": AGENT_VERSION,
         "agent": {
             "uuid": ident["uuid"],
+            "token": ident["token"],
             "version": AGENT_VERSION,
-            "capabilities": capabilities,
         },
         "system": {
-            "host": {
-                "hostname": core_metrics.get("hostname"),
-                "ip": local_ip,
-            },
-            "platform": {
-                "os": os_name,
-                "arch": arch,
-            },
-            "installation": core_metrics.get("installation", {}),
+            "hostname": core_metrics.get("hostname"),
+            "os": os_name,
+            "arch": arch,
         },
-        "metrics": core_metrics,
         "modules": modules,
         "meta": {
-            "sync_kind": sync_kind,
-            "collected_at": int(time.time()),
-            "partial_failures": partial_failures,
+            "schema_version": SCHEMA_VERSION,
+            "payload_kind": f"sync_{sync_kind}",
+            "sent_at": _iso_utc_now(),
         },
     }
 
@@ -131,7 +109,7 @@ def sync_with_luma(metrics=None, sync_kind="full"):
         response = get_http_session().post(url, json=payload, timeout=timeout)
 
         if response.status_code == 200:
-            log(f"Sync {sync_kind} OK depuis {payload['ip']} - Agent v{AGENT_VERSION}")
+            log(f"Sync {sync_kind} OK pour {payload['system']['hostname']} - Agent v{AGENT_VERSION}")
             return True
         if response.status_code == 403:
             log("Authentification echouee (token invalide).")
