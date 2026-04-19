@@ -31,7 +31,7 @@ def start_main_loop():
             should_heartbeat = now - last_ping >= heartbeat_interval
 
             try:
-                metrics = collect_metrics(include_modules=should_full_sync)
+                metrics = collect_metrics(include_modules=True)
             except Exception as e:
                 log(f"Echec de collecte des metriques : {e}")
                 metrics = {
@@ -58,7 +58,7 @@ def start_main_loop():
                 try:
                     heartbeat_metrics = {
                         "core": metrics.get("core", {}),
-                        "modules": {},
+                        "modules": metrics.get("modules", {}),
                         "partial_failures": metrics.get("partial_failures", []),
                     }
                     sync_with_luma(heartbeat_metrics, sync_kind="heartbeat")

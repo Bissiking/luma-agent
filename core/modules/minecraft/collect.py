@@ -146,6 +146,24 @@ def _discover_port_from_connections(proc: psutil.Process):
     return None
 
 
+def _discover_ports_from_connections(proc: psutil.Process):
+    ports = []
+    seen = set()
+
+    for conn in _safe_net_connections(proc):
+        if conn.status != psutil.CONN_LISTEN or not conn.laddr or not conn.laddr.port:
+            continue
+
+        port = int(conn.laddr.port)
+        if port in seen:
+            continue
+
+        seen.add(port)
+        ports.append(port)
+
+    return ports
+
+
 def _read_server_properties(path: str):
     try:
         with open(path, "r", encoding="utf-8") as handle:
@@ -221,22 +239,67 @@ def _build_detected_server(proc_info: dict) -> dict:
     }
 
 
+def _build_detected_server_with_port(proc_info: dict, port: int, detected_via: str) -> dict:
+    server = _build_detected_server(proc_info)
+    server["port"] = int(port)
+    server["detected_via"] = detected_via
+    return server
+
+
+def _probe_java_process_ports(proc_info: dict):
+    pid = proc_info["pid"]
+
+    try:
+        process = psutil.Process(pid)
+    except (psutil.NoSuchProcess, psutil.ZombieProcess):
+        return None
+
+    for port in _discover_ports_from_connections(process):
+        try:
+            _probe_java_server("127.0.0.1", int(port), min(MAX_PROBE_TIMEOUT, 0.75))
+            return _build_detected_server_with_port(proc_info, port, "process_probe")
+        except Exception:
+            continue
+
+    return None
+
+
 def _detect_local_servers():
     now = time.monotonic()
     if _DETECTION_CACHE["servers"] is not None and now < _DETECTION_CACHE["expires_at"]:
         return [dict(item) for item in _DETECTION_CACHE["servers"]]
 
     servers = []
+    seen_pids = set()
+
     for proc in _safe_process_iter():
         info = proc.info
-        if not _looks_like_minecraft_server(info):
+        if _looks_like_minecraft_server(info):
+            try:
+                server = _build_detected_server(info)
+            except (psutil.NoSuchProcess, psutil.ZombieProcess):
+                continue
+            except Exception as exc:
+                log(f"Module minecraft KO detection pid={info.get('pid')} : {exc}")
+                continue
+
+            servers.append(server)
+            seen_pids.add(info.get("pid"))
             continue
+
+        if not _is_java_process(info):
+            continue
+
+        if info.get("pid") in seen_pids:
+            continue
+
         try:
-            servers.append(_build_detected_server(info))
-        except (psutil.NoSuchProcess, psutil.ZombieProcess):
-            continue
+            server = _probe_java_process_ports(info)
+            if server:
+                servers.append(server)
+                seen_pids.add(info.get("pid"))
         except Exception as exc:
-            log(f"Module minecraft KO detection pid={info.get('pid')} : {exc}")
+            log(f"Module minecraft KO detection probe pid={info.get('pid')} : {exc}")
 
     _DETECTION_CACHE["servers"] = [dict(item) for item in servers]
     _DETECTION_CACHE["expires_at"] = now + DETECTION_CACHE_TTL
