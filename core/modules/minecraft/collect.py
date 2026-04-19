@@ -210,9 +210,17 @@ def _build_detected_server(proc_info: dict) -> dict:
     pid = proc_info["pid"]
     process = psutil.Process(pid)
 
-    port = _discover_port_from_connections(process)
+    port = _discover_port_from_properties(proc_info)
     if port is None:
-        port = _discover_port_from_properties(proc_info)
+        for candidate in _discover_ports_from_connections(process):
+            try:
+                _probe_java_server("127.0.0.1", int(candidate), min(MAX_PROBE_TIMEOUT, 0.75))
+                port = int(candidate)
+                break
+            except Exception:
+                continue
+    if port is None:
+        port = _discover_port_from_connections(process)
     if port is None:
         port = DEFAULT_MINECRAFT_PORT
 
