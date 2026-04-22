@@ -7,7 +7,7 @@ from core.config import get_identity, load_config
 from core.http import get_http_session
 from core.logger import log
 
-AGENT_VERSION = "OA-0.6.3-Rigel"
+AGENT_VERSION = "OA-0.6.4"
 SCHEMA_VERSION = "2.0"
 
 _OS_NAME = None
@@ -74,6 +74,7 @@ def build_sync_payload(metrics=None, sync_kind="full"):
     metrics = metrics or {}
     core_metrics = metrics.get("core", {})
     modules = metrics.get("modules", {})
+    partial_failures = metrics.get("partial_failures", [])
     os_name = get_os_name()
     arch = platform.machine()
 
@@ -88,11 +89,23 @@ def build_sync_payload(metrics=None, sync_kind="full"):
             "os": os_name,
             "arch": arch,
         },
+        "metrics": {
+            "cpu": core_metrics.get("cpu"),
+            "ram": core_metrics.get("ram"),
+            "disks": core_metrics.get("disks", []),
+            "uptime": core_metrics.get("uptime"),
+            "services": core_metrics.get("services", {}),
+            "network": core_metrics.get("network", {}),
+            "installation": core_metrics.get("installation", {}),
+        },
         "modules": modules,
         "meta": {
             "schema_version": SCHEMA_VERSION,
+            "sync_kind": sync_kind,
             "payload_kind": f"sync_{sync_kind}",
+            "collected_at": _iso_utc_now(),
             "sent_at": _iso_utc_now(),
+            "partial_failures": partial_failures,
         },
     }
 
